@@ -23,6 +23,11 @@ export const Aiden: React.FC = () => {
   const [selectedSources, setSelectedSources] = useState<any[] | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [showProductsMap, setShowProductsMap] = useState<Record<string, boolean>>({});
+
+  const toggleShowProducts = (msgId: string) => {
+    setShowProductsMap((prev) => ({ ...prev, [msgId]: !prev[msgId] }));
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -200,63 +205,74 @@ export const Aiden: React.FC = () => {
               >
                 <p className="font-sans">{message.text}</p>
 
-                {/* Structured Product Matches */}
-                {message.products && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5 pt-4 border-t border-white/5">
-                    {message.products.map((product) => (
-                      <div
-                        key={product.id}
-                        className="bg-obsidian-950/80 rounded-xl p-4 border border-white/10 hover:border-lime-500/40 transition-all flex flex-col justify-between group"
-                      >
-                        <div>
-                          {/* Match Badge */}
-                          <div className="flex items-center justify-between text-xs mb-2">
-                            <span className="bg-lime-500/10 text-lime-400 px-2 py-0.5 rounded border border-lime-500/20 font-bold font-mono text-[11px]">
-                              {product.matchScore}% Match
-                            </span>
-                            <span className="text-slate-400 font-sans text-xs">{product.brand}</span>
-                          </div>
+                {/* Collapsible Structured Product Matches */}
+                {message.products && message.products.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-white/5 space-y-3 font-sans">
+                    <button
+                      onClick={() => toggleShowProducts(message.id)}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-obsidian-850 hover:bg-obsidian-800 border border-white/10 text-xs text-lime-400 font-mono font-semibold transition-all"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>
+                        {showProductsMap[message.id]
+                          ? `Hide Product Matches (${message.products.length})`
+                          : `View Grounded Product Matches (${message.products.length})`}
+                      </span>
+                    </button>
 
-                          <h4 className="font-sans font-bold text-sm text-white mb-2 line-clamp-2">
-                            {product.name}
-                          </h4>
+                    {showProductsMap[message.id] && (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                        {message.products.map((product) => (
+                          <div
+                            key={product.id}
+                            className="bg-obsidian-950/90 rounded-xl p-4 border border-white/10 hover:border-lime-500/40 transition-all flex flex-col justify-between group relative space-y-3"
+                          >
+                            <div className="space-y-2">
+                              {/* Clean Match Badge Header */}
+                              <div className="flex items-center justify-between text-xs">
+                                <span className="bg-lime-500/10 text-lime-400 px-2 py-0.5 rounded border border-lime-500/20 font-bold font-mono text-[11px]">
+                                  {product.matchScore}% Match
+                                </span>
+                                <span className="text-slate-400 font-sans text-xs">{product.brand}</span>
+                              </div>
 
-                          {/* Reasoning Score Breakdown Bars */}
-                          <div className="space-y-1.5 text-xs text-slate-300 my-3 bg-obsidian-900 p-2.5 rounded-lg border border-white/5 font-sans">
-                            <div className="flex justify-between">
-                              <span>ANC Isolation:</span>
-                              <span className="text-lime-400 font-mono font-medium">{product.reasoningScores?.ancIsolation ?? 95}%</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Battery Life:</span>
-                              <span className="text-cyan-400 font-mono font-medium">{product.reasoningScores?.battery ?? 92}%</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Ergonomics & Weight:</span>
-                              <span className="text-white font-mono font-medium">{product.reasoningScores?.weightErgonomics ?? 90}%</span>
-                            </div>
-                          </div>
-                        </div>
+                              <h4 className="font-sans font-bold text-sm text-white line-clamp-2">
+                                {product.name}
+                              </h4>
 
-                        <div>
-                          {/* Price & Action */}
-                          <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                            <div>
-                              <div className="text-base font-bold text-white font-mono">${product.price}</div>
-                              <div className="text-xs text-slate-400 line-through font-mono">
-                                ${product.originalPrice}
+                              {/* Reasoning Score Breakdown Bars */}
+                              <div className="space-y-1.5 text-xs text-slate-300 bg-obsidian-900 p-2.5 rounded-lg border border-white/5 font-sans">
+                                <div className="flex justify-between">
+                                  <span>ANC Isolation:</span>
+                                  <span className="text-lime-400 font-mono font-medium">{product.reasoningScores?.ancIsolation ?? 95}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Battery Life:</span>
+                                  <span className="text-cyan-400 font-mono font-medium">{product.reasoningScores?.battery ?? 92}%</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Ergonomics & Weight:</span>
+                                  <span className="text-white font-mono font-medium">{product.reasoningScores?.weightErgonomics ?? 90}%</span>
+                                </div>
                               </div>
                             </div>
-                            <button
-                              onClick={() => addToCart(product)}
-                              className="px-3 py-1.5 rounded-lg bg-lime-500 hover:bg-lime-400 text-obsidian-950 font-bold text-xs shadow-lime-glow transition-all font-sans"
-                            >
-                              Add to Shortlist
-                            </button>
+
+                            {/* Price & Action */}
+                            <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                              <div className="text-base font-bold text-white font-mono">
+                                ${product.price}
+                              </div>
+                              <button
+                                onClick={() => addToCart(product)}
+                                className="px-3 py-1.5 rounded-lg bg-lime-500 hover:bg-lime-400 text-obsidian-950 font-bold text-xs shadow-lime-glow transition-all font-sans"
+                              >
+                                Add to Cart
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
 

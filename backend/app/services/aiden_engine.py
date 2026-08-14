@@ -110,14 +110,7 @@ class AidenEngine:
         # Cross-module proactive event surfacing if event detected
         if cross_module_event:
             ev_title = cross_module_event.get("title", "")
-            ev_region = cross_module_event.get("region", "")
-            ev_z = cross_module_event.get("z_score", "")
-            
             reasoning.append(f"⚡ CROSS-MODULE TELEMETRY EVENT: Intercepted DataMart anomaly alert ({ev_title}).")
-            message_text += (
-                f"\n\n⚡ **Cross-Module Telemetry Alert**: DataMart detected a **{ev_z}σ fulfillment latency anomaly** "
-                f"in **{ev_region}**. Would you like me to initiate a proactive inventory re-allocation order for this region?"
-            )
             
         # REAL SHA-256 Cryptographic Lineage Hash
         table_name = "DW_RETAIL.CATALOG_MASTER"
