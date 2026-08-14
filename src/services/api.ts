@@ -118,11 +118,13 @@ export class AurexAPI {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages }),
       });
-      if (!res.ok) throw new Error('Aiden AI Chat failed');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ detail: `HTTP ${res.status} Error` }));
+        return { error: errData.detail || `SeekAI API Error (HTTP ${res.status})` };
+      }
       return await res.json();
-    } catch (err) {
-      console.warn('[AUREX API] Aiden Chat API fallback:', err);
-      return null;
+    } catch (err: any) {
+      return { error: err.message || 'Network connection failed' };
     }
   }
 

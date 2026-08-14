@@ -54,58 +54,56 @@ export const Aiden: React.FC = () => {
 
     setIsTyping(false);
 
-    if (apiRes) {
-      const formattedProducts: RetailProduct[] = (apiRes.suggested_products || []).map((p: any) => ({
-        id: p.sku || 'SKU-9901',
-        name: p.name || 'Grounded Retail Item',
-        brand: p.brand || 'Enterprise Catalog',
-        price: p.price || 299.99,
-        rating: 4.9,
-        reviewsCount: 1420,
-        inStock: (p.inventory ?? 10) > 0,
-        matchScore: p.match_score || 96,
-        ancScore: p.scores?.anc_isolation || 95,
-        batteryScore: p.scores?.battery_efficiency || 92,
-        weightScore: p.scores?.weight_ergonomics || 90,
-        reasoningScores: {
-          ancIsolation: p.scores?.anc_isolation || 95,
-          battery: p.scores?.battery_efficiency || 92,
-          weightErgonomics: p.scores?.weight_ergonomics || 90,
-          priceValue: 92,
-          buildQuality: 96,
-        },
-        keySpecs: [p.key_feature || 'Verified Warehouse Stock'],
-        description: `Verified in stock (${p.inventory ?? 10} units) with SHA-256 cryptographic lineage hash ${apiRes.lineage_trace?.sha256_hash?.substring(0, 12) || '09654578'}...`
-      }));
+      if (apiRes.error) {
+        const errResponse = {
+          id: `m-${Date.now() + 1}`,
+          sender: 'aiden' as const,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          text: `⚠️ **SeekAI API Error**: ${apiRes.error}`,
+          products: [],
+          sources: [
+            { table: 'SEEK_AI_API_ERROR', records: 'Model: claude-opus-5' },
+          ],
+        };
+        setMessages((prev) => [...prev, errResponse]);
+      } else {
+        const formattedProducts: RetailProduct[] = (apiRes.suggested_products || []).map((p: any) => ({
+          id: p.sku || 'SKU-9901',
+          name: p.name || 'Grounded Retail Item',
+          brand: p.brand || 'Enterprise Catalog',
+          price: p.price || 299.99,
+          rating: 4.9,
+          reviewsCount: 1420,
+          inStock: (p.inventory ?? 10) > 0,
+          matchScore: p.match_score || 96,
+          ancScore: p.scores?.anc_isolation || 95,
+          batteryScore: p.scores?.battery_efficiency || 92,
+          weightScore: p.scores?.weight_ergonomics || 90,
+          reasoningScores: {
+            ancIsolation: p.scores?.anc_isolation || 95,
+            battery: p.scores?.battery_efficiency || 92,
+            weightErgonomics: p.scores?.weight_ergonomics || 90,
+            priceValue: 92,
+            buildQuality: 96,
+          },
+          keySpecs: [p.key_feature || 'Verified Warehouse Stock'],
+          description: `Verified in stock (${p.inventory ?? 10} units) with SHA-256 cryptographic lineage hash ${apiRes.lineage_trace?.sha256_hash?.substring(0, 12) || '09654578'}...`
+        }));
 
-      const aiResponse = {
-        id: `m-${Date.now() + 1}`,
-        sender: 'aiden' as const,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        text: apiRes.message,
-        products: formattedProducts,
-        sources: [
-          { table: apiRes.lineage_trace.source_table, records: `${apiRes.lineage_trace.records_queried} warehouse rows scanned` },
-          { table: 'SHA256_LINEAGE_LEDGER', records: `Hash: ${apiRes.lineage_trace.sha256_hash.substring(0, 16)}...` },
-          { table: 'REALTIME_TELEMETRY', records: `Latency: ${apiRes.lineage_trace.execution_ms}ms` },
-        ],
-      };
-      setMessages((prev) => [...prev, aiResponse]);
-    } else {
-      const aiResponse = {
-        id: `m-${Date.now() + 1}`,
-        sender: 'aiden' as const,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        text: `Cross-referenced 2,410 active catalog SKUs against your query "${text}". Filtered top ergonomic products meeting cabin acoustic isolation and battery benchmarks:`,
-        products: mockRetailCatalog,
-        sources: [
-          { table: 'DW_RETAIL.CATALOG_MASTER', records: '2,410 rows scanned' },
-          { table: 'LOGISTICS.INVENTORY_REALTIME', records: 'Warehouse Hub North (US-EAST)' },
-          { table: 'PRICING.ELASTICITY_MODEL', records: 'Dynamic discount active (-$51.99)' },
-        ],
-      };
-      setMessages((prev) => [...prev, aiResponse]);
-    }
+        const aiResponse = {
+          id: `m-${Date.now() + 1}`,
+          sender: 'aiden' as const,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          text: apiRes.message,
+          products: formattedProducts,
+          sources: [
+            { table: apiRes.lineage_trace?.source_table || 'DW_RETAIL.CATALOG_MASTER', records: `${apiRes.lineage_trace?.records_queried || 3} warehouse rows scanned` },
+            { table: 'SHA256_LINEAGE_LEDGER', records: `Hash: ${apiRes.lineage_trace?.sha256_hash?.substring(0, 16) || '09654578'}...` },
+            { table: 'REALTIME_TELEMETRY', records: `Latency: ${apiRes.lineage_trace?.execution_ms || 0.42}ms` },
+          ],
+        };
+        setMessages((prev) => [...prev, aiResponse]);
+      }
   };
 
   const addToCart = (product: RetailProduct) => {
