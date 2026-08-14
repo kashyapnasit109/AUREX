@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import {
   Play,
   RotateCcw,
-  Sliders,
   ShieldCheck,
   Sparkles,
+  Hash,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -21,22 +21,24 @@ import {
   mockTradeLedger,
   type StrategyPreset,
 } from '../data/mockData';
+import { AskAurexDrawer } from '../components/common/AskAurexDrawer';
 
 export const QuantStudio: React.FC = () => {
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyPreset>(strategyPresets[0]);
-  const [instrument, setInstrument] = useState('BTC-PERP');
-  const [capital, setCapital] = useState(100000);
-  const [leverage, setLeverage] = useState(2.0);
-  const [slippageBps, setSlippageBps] = useState(2.5);
   const [isSimulating, setIsSimulating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'equity' | 'drawdown' | 'trades'>('equity');
+  const [activeTab, setActiveTab] = useState<'equity' | 'drawdown' | 'stress' | 'compare' | 'trades'>('equity');
   const [trainSplit, setTrainSplit] = useState(70); // 70% IS, 30% OOS
+  const [askAurexOpen, setAskAurexOpen] = useState(false);
+
+  // Stress Testing Sliders
+  const [marketShock, setMarketShock] = useState(-15);
+  const [volatilityMultiplier, setVolatilityMultiplier] = useState(50);
+  const [slippageStress, setSlippageStress] = useState(25);
 
   const [equityData, setEquityData] = useState(generateEquityData(100, 1.0));
 
   const handleStrategyChange = (preset: StrategyPreset) => {
     setSelectedStrategy(preset);
-    setInstrument(preset.defaultInstrument);
     handleRunSimulation();
   };
 
@@ -48,8 +50,21 @@ export const QuantStudio: React.FC = () => {
     }, 600);
   };
 
+  // Resilience score calculation
+  const stressResilienceScore = Math.max(
+    45,
+    Math.min(95, Math.round(92 + marketShock * 0.8 - volatilityMultiplier * 0.15 - slippageStress * 0.2))
+  );
+
   return (
     <div className="p-6 md:p-8 space-y-6 font-sans">
+      <AskAurexDrawer
+        isOpen={askAurexOpen}
+        onClose={() => setAskAurexOpen(false)}
+        contextTitle={`Quant Strategy: ${selectedStrategy.name}`}
+        contextPrompt={`Analyze the risk-adjusted return and out-of-sample persistence of ${selectedStrategy.name}.`}
+      />
+
       {/* Module Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-white/10">
         <div>
@@ -73,16 +88,23 @@ export const QuantStudio: React.FC = () => {
         {/* Action Triggers */}
         <div className="flex items-center gap-3 text-xs">
           <button
+            onClick={() => setAskAurexOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 border border-white/10 text-slate-200 font-semibold transition-all"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-lime-400" />
+            <span>Ask AUREX</span>
+          </button>
+          <button
             onClick={() => {
-              setCapital(100000);
-              setLeverage(2.0);
-              setSlippageBps(2.5);
+              setMarketShock(-15);
+              setVolatilityMultiplier(50);
+              setSlippageStress(25);
               handleRunSimulation();
             }}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 border border-white/10 text-slate-300 transition-all font-sans font-semibold"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Defaults</span>
+            <span>Reset</span>
           </button>
           <button
             onClick={handleRunSimulation}
@@ -97,7 +119,7 @@ export const QuantStudio: React.FC = () => {
 
       {/* Main Workspace Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left 4 Cols: Strategy Configuration & Look-Ahead Guard */}
+        {/* Left 4 Cols: Strategy Configuration & Reproducibility */}
         <div className="lg:col-span-4 space-y-6">
           {/* Strategy Presets Selector */}
           <div className="glass-card p-5 rounded-2xl border border-white/10 space-y-4">
@@ -173,67 +195,34 @@ export const QuantStudio: React.FC = () => {
             </p>
           </div>
 
-          {/* Parameter Tuning Inputs */}
-          <div className="glass-card p-5 rounded-2xl border border-white/10 space-y-4 text-xs font-sans">
+          {/* Run Reproducibility Box */}
+          <div className="glass-card p-5 rounded-2xl border border-white/10 space-y-3 font-mono text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-slate-200 font-bold uppercase tracking-wider">
-                Execution Parameters
-              </span>
-              <Sliders className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-slate-300 font-bold uppercase font-sans text-[11px]">Run Reproducibility</span>
+              <Hash className="w-3.5 h-3.5 text-cyan-400" />
             </div>
 
-            <div className="space-y-3 font-mono">
-              <div>
-                <label className="text-[10px] text-slate-400 uppercase font-semibold">Target Instrument</label>
-                <select
-                  value={instrument}
-                  onChange={(e) => setInstrument(e.target.value)}
-                  className="w-full mt-1 bg-obsidian-950 border border-white/10 rounded-xl p-2.5 text-slate-200 outline-none focus:border-lime-500 transition-colors font-sans text-xs"
-                >
-                  <option value="BTC-PERP">BTC-PERP (Perpetual)</option>
-                  <option value="ETH-PERP">ETH-PERP (Perpetual)</option>
-                  <option value="SOL-PERP">SOL-PERP (High-Beta Momentum)</option>
-                  <option value="ETH/BTC Pairs">ETH/BTC Cointegrated Vector</option>
-                </select>
+            <div className="space-y-1.5 text-[11px]">
+              <div className="flex justify-between text-slate-400">
+                <span>Run ID:</span>
+                <span className="text-lime-400 font-bold">BT-2026-89421</span>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-semibold">Initial Capital</label>
-                  <input
-                    type="number"
-                    value={capital}
-                    onChange={(e) => setCapital(Number(e.target.value))}
-                    className="w-full mt-1 bg-obsidian-950 border border-white/10 rounded-xl p-2 text-slate-200 outline-none focus:border-lime-500 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-semibold">Max Leverage</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={leverage}
-                    onChange={(e) => setLeverage(Number(e.target.value))}
-                    className="w-full mt-1 bg-obsidian-950 border border-white/10 rounded-xl p-2 text-slate-200 outline-none focus:border-lime-500 text-xs"
-                  />
-                </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Engine Core:</span>
+                <span className="text-white">v0.4.2 (Walk-Forward)</span>
               </div>
-
-              <div>
-                <label className="text-[10px] text-slate-400 uppercase font-semibold">Slippage & Impact (BPS)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={slippageBps}
-                  onChange={(e) => setSlippageBps(Number(e.target.value))}
-                  className="w-full mt-1 bg-obsidian-950 border border-white/10 rounded-xl p-2 text-slate-200 outline-none focus:border-lime-500 text-xs"
-                />
+              <div className="flex justify-between text-slate-400">
+                <span>Deterministic Seed:</span>
+                <span className="text-white">842193</span>
+              </div>
+              <div className="pt-2 border-t border-white/5 text-[10px] text-cyan-400 truncate">
+                Hash: 8F3A92BC0E14890DCA12...
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right 8 Cols: Visual Analytics, Quantitative Scorecard, Trade Logs */}
+        {/* Right 8 Cols: Visual Analytics, Quantitative Scorecard, Stress Lab */}
         <div className="lg:col-span-8 space-y-6">
           {/* Quantitative Performance Scorecard */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
@@ -269,7 +258,7 @@ export const QuantStudio: React.FC = () => {
             </div>
           </div>
 
-          {/* Interactive Chart Canvas with Fixed Bounds and No Clipping */}
+          {/* Interactive Chart Canvas with Stress Lab & Comparison Tabs */}
           <div className="glass-card p-6 rounded-3xl border border-white/10 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               {/* Tab Selector */}
@@ -292,38 +281,42 @@ export const QuantStudio: React.FC = () => {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  Drawdown Profile
+                  Drawdown
+                </button>
+                <button
+                  onClick={() => setActiveTab('stress')}
+                  className={`px-3.5 py-1.5 rounded-lg transition-all font-semibold ${
+                    activeTab === 'stress'
+                      ? 'bg-amber-500 text-obsidian-950 shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Stress Lab
+                </button>
+                <button
+                  onClick={() => setActiveTab('compare')}
+                  className={`px-3.5 py-1.5 rounded-lg transition-all font-semibold ${
+                    activeTab === 'compare'
+                      ? 'bg-cyan-500 text-obsidian-950 shadow-cyan-glow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Experiment Lab
                 </button>
                 <button
                   onClick={() => setActiveTab('trades')}
                   className={`px-3.5 py-1.5 rounded-lg transition-all font-semibold ${
                     activeTab === 'trades'
-                      ? 'bg-cyan-500 text-obsidian-950'
+                      ? 'bg-emerald-500 text-obsidian-950'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  Trade Ledger ({mockTradeLedger.length})
+                  Ledger ({mockTradeLedger.length})
                 </button>
-              </div>
-
-              {/* Chart Legend Telemetry */}
-              <div className="flex items-center gap-4 text-xs font-sans">
-                <div className="flex items-center gap-1.5 text-lime-400 font-semibold">
-                  <span className="w-2.5 h-2.5 rounded-full bg-lime-400" />
-                  <span>Strategy Alpha</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-cyan-400 font-semibold">
-                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                  <span>Benchmark</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                  <span>OOS Boundary</span>
-                </div>
               </div>
             </div>
 
-            {/* Rendering Tab Content with Generous Safe Margins */}
+            {/* Rendering Tab Content */}
             {activeTab === 'equity' && (
               <div className="w-full h-80 relative">
                 <ResponsiveContainer width="100%" height="100%">
@@ -366,7 +359,6 @@ export const QuantStudio: React.FC = () => {
                       }}
                       itemStyle={{ color: '#f8fafc' }}
                     />
-                    {/* Fixed Reference Line with Safe Inset Text Position */}
                     <ReferenceLine
                       x={equityData[Math.floor((equityData.length * trainSplit) / 100)].date}
                       stroke="#10B981"
@@ -404,6 +396,112 @@ export const QuantStudio: React.FC = () => {
               </div>
             )}
 
+            {/* STRESS TESTING LAB */}
+            {activeTab === 'stress' && (
+              <div className="space-y-6 py-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="p-4 bg-obsidian-950 rounded-2xl border border-white/5 space-y-2">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className="text-slate-400">Market Shock:</span>
+                      <span className="text-coral-400 font-bold">{marketShock}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="-40"
+                      max="0"
+                      value={marketShock}
+                      onChange={(e) => setMarketShock(Number(e.target.value))}
+                      className="w-full accent-coral-500 cursor-pointer"
+                    />
+                  </div>
+                  <div className="p-4 bg-obsidian-950 rounded-2xl border border-white/5 space-y-2">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className="text-slate-400">Volatility Expansion:</span>
+                      <span className="text-amber-400 font-bold">+{volatilityMultiplier}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={volatilityMultiplier}
+                      onChange={(e) => setVolatilityMultiplier(Number(e.target.value))}
+                      className="w-full accent-amber-500 cursor-pointer"
+                    />
+                  </div>
+                  <div className="p-4 bg-obsidian-950 rounded-2xl border border-white/5 space-y-2">
+                    <div className="flex justify-between text-xs font-mono">
+                      <span className="text-slate-400">Slippage & Impact:</span>
+                      <span className="text-cyan-400 font-bold">+{slippageStress}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="50"
+                      value={slippageStress}
+                      onChange={(e) => setSlippageStress(Number(e.target.value))}
+                      className="w-full accent-cyan-500 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-center">
+                  <div className="p-4 bg-obsidian-950 rounded-2xl border border-white/10">
+                    <div className="text-[10px] text-slate-400 uppercase font-semibold">Stressed CAGR</div>
+                    <div className="text-2xl font-bold text-white mt-1">
+                      +{(selectedStrategy.cagr * (1 + marketShock * 0.007)).toFixed(1)}%
+                    </div>
+                    <div className="text-[10px] text-slate-500">Base: +{selectedStrategy.cagr}%</div>
+                  </div>
+                  <div className="p-4 bg-obsidian-950 rounded-2xl border border-white/10">
+                    <div className="text-[10px] text-slate-400 uppercase font-semibold">Stressed Max DD</div>
+                    <div className="text-2xl font-bold text-coral-400 mt-1">
+                      {(selectedStrategy.maxDrawdown * (1 + volatilityMultiplier * 0.008)).toFixed(1)}%
+                    </div>
+                    <div className="text-[10px] text-slate-500">Base: {selectedStrategy.maxDrawdown}%</div>
+                  </div>
+                  <div className="p-4 bg-lime-500/10 rounded-2xl border border-lime-500/30">
+                    <div className="text-[10px] text-lime-400 uppercase font-semibold">Resilience Score</div>
+                    <div className="text-2xl font-bold text-lime-400 mt-1">{stressResilienceScore} / 100</div>
+                    <div className="text-[10px] text-emerald-400">Institutional Pass Grade</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* EXPERIMENT COMPARISON LAB */}
+            {activeTab === 'compare' && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left font-mono text-xs border-collapse">
+                  <thead className="bg-obsidian-950 text-slate-300 font-sans font-bold border-b border-white/10">
+                    <tr>
+                      <th className="py-3 px-4">Strategy Candidate</th>
+                      <th className="py-3 px-4">CAGR</th>
+                      <th className="py-3 px-4">Sharpe</th>
+                      <th className="py-3 px-4">Max DD</th>
+                      <th className="py-3 px-4">Win Rate</th>
+                      <th className="py-3 px-4 text-right">AUREX Verdict</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 font-sans">
+                    {strategyPresets.map((strat) => (
+                      <tr key={strat.id} className="hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-4 font-bold text-white">{strat.name}</td>
+                        <td className="py-3 px-4 font-mono text-lime-400 font-bold">+{strat.cagr}%</td>
+                        <td className="py-3 px-4 font-mono text-emerald-400 font-bold">{strat.sharpe}</td>
+                        <td className="py-3 px-4 font-mono text-coral-400 font-bold">{strat.maxDrawdown}%</td>
+                        <td className="py-3 px-4 font-mono text-cyan-400 font-bold">{strat.winRate}%</td>
+                        <td className="py-3 px-4 text-right">
+                          <span className="text-[10px] bg-lime-500/10 text-lime-400 font-bold px-2 py-1 rounded border border-lime-500/20">
+                            {strat.sharpe >= 3.0 ? 'Top Risk-Adjusted' : 'High-Beta Alpha'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
             {activeTab === 'drawdown' && (
               <div className="w-full h-80 relative">
                 <ResponsiveContainer width="100%" height="100%">
@@ -417,38 +515,10 @@ export const QuantStudio: React.FC = () => {
                         <stop offset="95%" stopColor="#F43F5E" stopOpacity={0.05} />
                       </linearGradient>
                     </defs>
-                    <XAxis
-                      dataKey="date"
-                      stroke="#334155"
-                      tick={{ fill: '#94a3b8', fontSize: 10, fontFamily: 'JetBrains Mono' }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      stroke="#334155"
-                      tick={{ fill: '#94a3b8', fontSize: 10, fontFamily: 'JetBrains Mono' }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(v) => `${v}%`}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#0c0f17',
-                        borderColor: 'rgba(255, 255, 255, 0.15)',
-                        borderRadius: '12px',
-                        fontFamily: 'JetBrains Mono',
-                        fontSize: '11px',
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="drawdown"
-                      name="Drawdown"
-                      stroke="#F43F5E"
-                      strokeWidth={2}
-                      fillOpacity={1}
-                      fill="url(#colorQuantDD)"
-                    />
+                    <XAxis dataKey="date" stroke="#334155" tick={{ fill: '#94a3b8', fontSize: 10, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#334155" tick={{ fill: '#94a3b8', fontSize: 10, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                    <Tooltip contentStyle={{ backgroundColor: '#0c0f17', borderColor: 'rgba(255, 255, 255, 0.15)', borderRadius: '12px', fontFamily: 'JetBrains Mono', fontSize: '11px' }} />
+                    <Area type="monotone" dataKey="drawdown" name="Drawdown" stroke="#F43F5E" strokeWidth={2} fillOpacity={1} fill="url(#colorQuantDD)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -506,22 +576,6 @@ export const QuantStudio: React.FC = () => {
                 </table>
               </div>
             )}
-          </div>
-
-          {/* AUREX Interpretation */}
-          <div className="glass-card p-6 rounded-3xl border border-lime-500/20 bg-lime-950/10 space-y-3">
-            <div className="flex items-center gap-2 text-lime-400 text-xs font-semibold font-sans">
-              <Sparkles className="w-4 h-4" />
-              <span>AUREX Quantitative Interpretation & Alpha Decomposition</span>
-            </div>
-            <p className="text-slate-200 text-sm leading-relaxed font-sans">
-              The <strong className="text-white font-semibold">{selectedStrategy.name}</strong> demonstrated strong statistical persistence across the <strong>{100 - trainSplit}% Out-of-Sample evaluation window</strong>. The strategy captured upside regime shifts during high-volatility expansions with a low drawdown correlation to the BTC index (-0.14). Calmar ratio of <strong>{selectedStrategy.calmar}</strong> confirms institutional-grade risk-adjusted efficiency.
-            </p>
-            <div className="flex flex-wrap gap-4 pt-2 text-xs text-slate-300 border-t border-white/5 font-sans">
-              <span>• Alpha Confidence: <strong className="text-lime-400 font-mono">99.1%</strong></span>
-              <span>• Max Regime Drawdown: <strong className="text-coral-400 font-mono">{selectedStrategy.maxDrawdown}%</strong></span>
-              <span>• Zero Look-Ahead Isolation: <strong className="text-emerald-400 font-semibold">Verified</strong></span>
-            </div>
           </div>
         </div>
       </div>
