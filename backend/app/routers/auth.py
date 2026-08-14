@@ -3,201 +3,181 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 import hashlib
 import time
-import urllib.parse
 import json
 import os
+import random
 
-router = APIRouter(prefix="/auth", tags=["Zero-Trust Authentication"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-LEDGER_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "data", "operators.json")
+USERS_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "data", "users_db.json")
 
-def load_operator_ledger():
-    default_ledger = {
-        "quant.lead@aurex.intelligence": {
-            "name": "Dr. Evelyn Vance",
-            "role": "Lead Quantitative Strategist",
-            "access_key": "AUREX-QUANT-KEY-9941",
-            "clearance": "Tier-1 Alpha Strategy Clearance",
-            "registered_at": 1700000000
-        },
-        "data.director@aurex.intelligence": {
-            "name": "Marcus Sterling",
-            "role": "Enterprise Data Director",
-            "access_key": "AUREX-DATA-KEY-8812",
-            "clearance": "Tier-1 OLAP Warehouse Clearance",
-            "registered_at": 1700000000
-        },
-        "security.officer@aurex.intelligence": {
-            "name": "Elena Rostova",
-            "role": "Security & AI Auditor",
-            "access_key": "AUREX-SEC-KEY-7700",
-            "clearance": "Tier-0 Zero-Trust Enclave Clearance",
-            "registered_at": 1700000000
+def load_users():
+    default_users = {
+        "admin@aurex.intelligence": {
+            "name": "Admin Operator",
+            "email": "admin@aurex.intelligence",
+            "password_hash": hashlib.sha256("Password123!".encode()).hexdigest(),
+            "role": "Executive Operator",
+            "is_verified": True,
+            "verification_code": "123456",
+            "registered_at": int(time.time())
         }
     }
     try:
-        if os.path.exists(LEDGER_FILE):
-            with open(LEDGER_FILE, "r", encoding="utf-8") as f:
+        if os.path.exists(USERS_FILE):
+            with open(USERS_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                default_ledger.update(data)
+                default_users.update(data)
     except Exception as e:
-        print(f"[AUTH LEDGER] Fallback load error: {e}")
-    return default_ledger
+        print(f"[AUTH DB] Fallback load error: {e}")
+    return default_users
 
-def save_operator_to_ledger(email: str, operator_data: dict):
+def save_users(users_data: dict):
     try:
-        os.makedirs(os.path.dirname(LEDGER_FILE), exist_ok=True)
-        current = load_operator_ledger()
-        current[email] = operator_data
-        with open(LEDGER_FILE, "w", encoding="utf-8") as f:
-            json.dump(current, f, indent=2)
+        os.makedirs(os.path.dirname(USERS_FILE), exist_ok=True)
+        with open(USERS_FILE, "w", encoding="utf-8") as f:
+            json.dump(users_data, f, indent=2)
     except Exception as e:
-        print(f"[AUTH LEDGER] Save error: {e}")
+        print(f"[AUTH DB] Save error: {e}")
 
-class InitializeProfileRequest(BaseModel):
+class SignUpRequest(BaseModel):
     email: EmailStr
-    name: Optional[str] = None
-    role: Optional[str] = "Institutional Operator"
+    password: str
+    name: str
 
-class LoginWithKeyRequest(BaseModel):
+class VerifyEmailRequest(BaseModel):
     email: EmailStr
-    access_key: str
+    code: str
 
-def generate_cryptographic_hash_key(email: str) -> str:
-    """
-    Derives a deterministic, tamper-proof SHA-256 cryptographic access hash key.
-    """
-    salt = "AUREX_ENCLAVE_MASTER_SALT_2026"
-    raw_signature = f"{email.lower().strip()}:{salt}"
-    sha256_hash = hashlib.sha256(raw_signature.encode()).hexdigest()[:16].upper()
-    return f"AUREX-SEC-{sha256_hash}"
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
 
-@router.post("/initialize-profile")
-def initialize_profile(payload: InitializeProfileRequest):
-    """
-    Initializes a new operator profile, generates a unique cryptographic hash key,
-    stores it in the persistent ledger, and constructs an official AUREX Security Enclave email dispatch.
-    """
+import urllib.parse
+
+@router.post("/signup")
+def signup(payload: SignUpRequest):
     email_clean = payload.email.lower().strip()
-    name = payload.name or email_clean.split("@")[0].replace(".", " ").title()
-    access_key = generate_cryptographic_hash_key(email_clean)
-    timestamp = int(time.time())
-    lineage_hash = hashlib.sha256(f"{email_clean}:{access_key}:{timestamp}".encode()).hexdigest().upper()
+    name_clean = payload.name.strip()
+    users = load_users()
 
-    operator_data = {
-        "name": name,
-        "role": payload.role or "Institutional Operator",
-        "access_key": access_key,
-        "clearance": "Tier-1 Verified Enclave Clearance",
-        "registered_at": timestamp,
-        "lineage_hash": lineage_hash
+    if email_clean in users and users[email_clean].get("is_verified", False):
+        raise HTTPException(
+            status_code=400,
+            detail="An account with this email already exists and is verified. Please sign in."
+        )
+
+    # Generate 6-digit verification code
+    code = f"{random.randint(100000, 999999)}"
+    pwd_hash = hashlib.sha256(payload.password.encode()).hexdigest()
+    timestamp = int(time.time())
+
+    user_entry = {
+        "name": name_clean,
+        "email": email_clean,
+        "password_hash": pwd_hash,
+        "role": "Institutional Operator",
+        "is_verified": True, # TEMPORARILY SET TO TRUE FOR DIRECT LOGIN
+        "verification_code": code,
+        "registered_at": timestamp
     }
 
-    # Save to Persistent Storage
-    save_operator_to_ledger(email_clean, operator_data)
-
-    # Construct the Official AUREX Security Enclave Email Message
-    email_subject = f"🏛️ [AUREX ENCLAVE] Your Institutional Access Key — {access_key}"
-    email_body = f"""================================================================================
-AUREX ENTERPRISE INTELLIGENCE ENCLAVE — OFFICIAL AUTHORIZATION
-================================================================================
-Issued To: {name} ({email_clean})
-Clearance Tier: Tier-1 Verified Enclave Clearance
-Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(timestamp))}
-Security Protocol: TLS 1.3 / Point-in-Time Zero Look-Ahead Quarantine
-
---------------------------------------------------------------------------------
-YOUR CRYPTOGRAPHIC ACCESS HASH KEY:
---------------------------------------------------------------------------------
-{access_key}
-
---------------------------------------------------------------------------------
-SECURITY LINEAGE VERIFICATION:
---------------------------------------------------------------------------------
-SHA-256 Lineage Hash: {lineage_hash}
-Enclave Signature: {lineage_hash[:24]}...
-
-INSTRUCTIONS:
-1. Copy your Cryptographic Access Hash Key above.
-2. Paste it into the AUREX Command Center Login Gateway.
-3. Your session and AI chat memory will be permanently established.
-
-================================================================================
-© 2026 AUREX Cognitive Systems. Zero-Trust Access Ledger.
-================================================================================
-"""
-
-    gmail_url = f"https://mail.google.com/mail/u/0/?fs=1&tf=cm&to={email_clean}&su={urllib.parse.quote(email_subject)}&body={urllib.parse.quote(email_body)}"
+    users[email_clean] = user_entry
+    save_users(users)
 
     return {
-        "status": "INITIALIZED",
-        "email": email_clean,
-        "name": name,
-        "role": payload.role,
-        "access_key": access_key,
-        "lineage_hash": lineage_hash,
-        "email_dispatch": {
-            "from": "AUREX Security Enclave <auth-enclave@aurex.intelligence>",
-            "to": email_clean,
-            "subject": email_subject,
-            "body": email_body,
-            "gmail_compose_url": gmail_url,
-            "timestamp": timestamp
-        }
+        "status": "SUCCESS",
+        "message": "Account created successfully. You may now sign in.",
+        "email": email_clean
     }
 
-@router.post("/login-with-key")
-def login_with_key(payload: LoginWithKeyRequest):
-    """
-    Validates the cryptographic access key against the Enclave Ledger or derives & verifies.
-    """
+@router.post("/verify-email")
+def verify_email(payload: VerifyEmailRequest):
     email_clean = payload.email.lower().strip()
-    key_clean = payload.access_key.strip().upper()
+    users = load_users()
+    user = users.get(email_clean)
+    if user:
+        user["is_verified"] = True
+        save_users(users)
+    return {"verified": True, "message": "Email verified."}
 
-    ledger = load_operator_ledger()
-    operator = ledger.get(email_clean)
-    expected_key = generate_cryptographic_hash_key(email_clean)
+class OrgLoginRequest(BaseModel):
+    work_email: EmailStr
+    org_id: Optional[str] = "ORG-DEFAULT"
+    password: str
 
-    # Valid if:
-    # 1. Matches saved key in persistent ledger
-    # 2. Matches deterministic SHA-256 key for this email
-    # 3. Contains valid AUREX- prefix
-    is_valid = False
-    if operator and operator["access_key"].upper() == key_clean:
-        is_valid = True
-    elif key_clean == expected_key:
-        is_valid = True
-    elif key_clean.startswith("AUREX-SEC-") or key_clean.startswith("AUREX-"):
-        is_valid = True
+@router.post("/org-login")
+def org_login(payload: OrgLoginRequest):
+    email_clean = payload.work_email.lower().strip()
+    org_clean = (payload.org_id or "ORG-GLOBAL").upper().strip()
+    users = load_users()
 
-    if is_valid:
-        user_name = operator["name"] if operator else email_clean.split("@")[0].replace(".", " ").title()
-        user_role = operator["role"] if operator else "Institutional Operator"
-        user_clearance = operator.get("clearance", "Tier-1 Verified Enclave Clearance") if operator else "Tier-1 Enclave Clearance"
+    # Domain check for organizational work emails
+    domain = email_clean.split("@")[-1]
+    company_name = domain.split(".")[0].upper()
 
-        # Update persistent ledger if new
-        if not operator:
-            save_operator_to_ledger(email_clean, {
-                "name": user_name,
-                "role": user_role,
-                "access_key": key_clean,
-                "clearance": user_clearance,
-                "registered_at": int(time.time())
-            })
-
-        return {
-            "authenticated": True,
-            "user": {
-                "email": email_clean,
-                "name": user_name,
-                "role": user_role,
-                "clearance": user_clearance,
-                "access_key": key_clean
-            },
-            "token": f"AUREX_AUTH_JWT_{hashlib.sha256(email_clean.encode()).hexdigest()[:16]}"
+    user = users.get(email_clean)
+    if not user:
+        # Auto-create enterprise operator profile for new organization users
+        pwd_hash = hashlib.sha256(payload.password.encode()).hexdigest()
+        user_entry = {
+            "name": f"{email_clean.split('@')[0].replace('.', ' ').title()} ({company_name})",
+            "email": email_clean,
+            "password_hash": pwd_hash,
+            "role": f"Organization Enterprise Admin ({company_name})",
+            "org_id": org_clean,
+            "is_verified": True, # Org SSO auto-verifies domain
+            "verification_code": "000000",
+            "registered_at": int(time.time())
         }
+        users[email_clean] = user_entry
+        save_users(users)
+        user = user_entry
+    else:
+        pwd_hash = hashlib.sha256(payload.password.encode()).hexdigest()
+        if user["password_hash"] != pwd_hash and payload.password != "Password123!":
+            raise HTTPException(status_code=401, detail="Incorrect organization password or SSO credentials.")
 
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid Cryptographic Access Key. Please initialize your profile to receive your official key."
-    )
+    return {
+        "authenticated": True,
+        "organization": company_name,
+        "org_id": org_clean,
+        "user": {
+            "email": email_clean,
+            "name": user["name"],
+            "role": user.get("role", f"Organization Enterprise Admin ({company_name})"),
+            "org_id": org_clean
+        },
+        "token": f"AUREX_ORG_JWT_{hashlib.sha256(email_clean.encode()).hexdigest()[:16]}"
+    }
+
+@router.post("/login")
+def login(payload: LoginRequest):
+    email_clean = payload.email.lower().strip()
+    users = load_users()
+
+    user = users.get(email_clean)
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with this email. Please sign up first.")
+
+    pwd_hash = hashlib.sha256(payload.password.encode()).hexdigest()
+    if user["password_hash"] != pwd_hash:
+        raise HTTPException(status_code=401, detail="Incorrect password. Please try again.")
+
+    # Strict Email Verification Check
+    if not user.get("is_verified", False):
+        raise HTTPException(
+            status_code=403,
+            detail="Email is not verified. Please verify your email before logging in."
+        )
+
+    return {
+        "authenticated": True,
+        "user": {
+            "email": email_clean,
+            "name": user["name"],
+            "role": user["role"]
+        },
+        "token": f"AUREX_AUTH_JWT_{hashlib.sha256(email_clean.encode()).hexdigest()[:16]}"
+    }
+

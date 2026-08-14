@@ -28,3 +28,6 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+__pycache__/
+*.py[cod]
+*$py.class

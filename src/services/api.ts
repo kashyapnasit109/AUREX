@@ -28,38 +28,82 @@ export interface AidenChatMessage {
 
 export class AurexAPI {
   /**
-   * Initialize Operator Profile & Receive Cryptographic Access Hash Key via Official Email
+   * Register new user account (returns pending verification state with code)
    */
-  static async initializeProfile(params: { email: string; name?: string; role?: string }) {
+  static async signUp(params: { email: string; password: string; name: string }) {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/initialize-profile`, {
+      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
       });
-      if (!res.ok) throw new Error('Profile initialization failed');
-      return await res.json();
-    } catch (err) {
-      console.warn('[AUREX API] Auth initialize fallback:', err);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Registration failed');
+      return data;
+    } catch (err: any) {
+      console.warn('[AUREX API] Sign up fallback:', err);
       return null;
     }
   }
 
   /**
-   * Authenticate with Cryptographic Access Hash Key
+   * Verify email address with 6-digit OTP code
    */
-  static async loginWithKey(params: { email: string; access_key: string }) {
+  static async verifyEmail(params: { email: string; code: string }) {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/login-with-key`, {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
       });
-      if (!res.ok) throw new Error('Invalid cryptographic key');
-      return await res.json();
-    } catch (err) {
-      console.warn('[AUREX API] Login with key fallback:', err);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Email verification failed');
+      return data;
+    } catch (err: any) {
+      console.warn('[AUREX API] Email verification fallback:', err);
       return null;
+    }
+  }
+
+  /**
+   * Log in as Organization / Enterprise SSO
+   */
+  static async orgLogin(params: { work_email: string; org_id?: string; password: string }) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/org-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { error: data.detail || 'Organization SSO authentication failed', status: res.status };
+      }
+      return data;
+    } catch (err: any) {
+      console.warn('[AUREX API] Org login fallback:', err);
+      return { error: err.message || 'Network connection failed' };
+    }
+  }
+
+  /**
+   * Log in with Email and Password (requires verified email)
+   */
+  static async login(params: { email: string; password: string }) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { error: data.detail || 'Authentication failed', status: res.status };
+      }
+      return data;
+    } catch (err: any) {
+      console.warn('[AUREX API] Login fallback:', err);
+      return { error: err.message || 'Network connection failed' };
     }
   }
 
