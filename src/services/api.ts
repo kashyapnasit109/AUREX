@@ -28,7 +28,44 @@ export interface AidenChatMessage {
 
 export class AurexAPI {
   /**
+   * Sign Up: Register a new operator with email
+   */
+  static async signUp(params: { email: string; name?: string; role?: string }) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) throw new Error('Sign up failed');
+      return await res.json();
+    } catch (err) {
+      console.warn('[AUREX API] Sign up failed:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Verify Email: Verify email with verification code
+   */
+  static async verifyEmail(params: { email: string; verification_code: string }) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) throw new Error('Verification failed');
+      return await res.json();
+    } catch (err) {
+      console.warn('[AUREX API] Email verification failed:', err);
+      throw err;
+    }
+  }
+
+  /**
    * Initialize Operator Profile & Receive Cryptographic Access Hash Key via Official Email
+   * DEPRECATED: Use signUp() and verifyEmail() instead
    */
   static async initializeProfile(params: { email: string; name?: string; role?: string }) {
     try {

@@ -7,183 +7,503 @@ import {
   ShieldCheck,
   CheckCircle2,
   Key,
-  Copy,
   Check,
-  Zap,
-  Globe,
   Mail,
   Lock,
   Sparkles,
-  ExternalLink,
   UserPlus,
   ShieldAlert,
+  LogIn,
+  AlertCircle,
 } from 'lucide-react';
 import { ParticleCore } from '../components/canvas/ParticleCore';
 import { AurexLogo } from '../components/brand/AurexLogo';
 import { AurexAPI } from '../services/api';
 
-interface DemoProfile {
-  name: string;
-  role: string;
-  shortRole: string;
-  email: string;
-  key: string;
-}
-
-const DEMO_PROFILES: DemoProfile[] = [
-  {
-    name: 'Dr. Evelyn Vance',
-    role: 'Lead Quantitative Strategist',
-    shortRole: 'Quant Access',
-    email: 'quant.lead@aurex.intelligence',
-    key: 'AUREX-QUANT-KEY-9941',
-  },
-  {
-    name: 'Marcus Sterling',
-    role: 'Enterprise Data Director',
-    shortRole: 'DataMart Access',
-    email: 'data.director@aurex.intelligence',
-    key: 'AUREX-DATA-KEY-8812',
-  },
-  {
-    name: 'Elena Rostova',
-    role: 'Security & AI Auditor',
-    shortRole: 'Security Access',
-    email: 'security.officer@aurex.intelligence',
-    key: 'AUREX-SEC-KEY-7700',
-  },
-];
-
-// Client-side deterministic cryptographic key derivation
-const generateClientHashKey = (email: string) => {
-  let hash = 0;
-  const clean = email.toLowerCase().trim() + ':AUREX_ENCLAVE_MASTER_SALT_2026';
-  for (let i = 0; i < clean.length; i++) {
-    const char = clean.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0;
-  }
-  const hex = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
-  return `AUREX-SEC-${hex}${hex.split('').reverse().join('')}`;
-};
+type AuthTab = 'login' | 'signup' | 'verify';
 
 export const Auth: React.FC = () => {
-  const [email, setEmail] = useState('quant.lead@aurex.intelligence');
-  const [accessKey, setAccessKey] = useState('AUREX-QUANT-KEY-9941');
-  const [activeProfile, setActiveProfile] = useState<DemoProfile>(DEMO_PROFILES[0]);
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<AuthTab>('login');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // New Operator Profile Initialization Modal State
-  const [initModalOpen, setInitModalOpen] = useState(false);
-  const [initEmail, setInitEmail] = useState('');
-  const [initName, setInitName] = useState('');
-  const [isInitializing, setIsInitializing] = useState(false);
-  const [issuedDispatch, setIssuedDispatch] = useState<any>(null);
-  const [copiedKey, setCopiedKey] = useState(false);
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginKey, setLoginKey] = useState('');
 
-  // FIDO2 / YubiKey Hardware Simulation State
-  const [fidoModalOpen, setFidoModalOpen] = useState(false);
-  const [fidoStep, setFidoStep] = useState<'prompt' | 'scanning' | 'success'>('prompt');
+  // Sign Up form state
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupName, setSignupName] = useState('');
+  const [signupRole, setSignupRole] = useState('Institutional Operator');
+  const [signupCompleted, setSignupCompleted] = useState(false);
 
-  const navigate = useNavigate();
+  // Verification form state
+  const [verifyEmail, setVerifyEmail] = useState('');
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifyAccessKey, setVerifyAccessKey] = useState<string | null>(null);
 
-  const handleSelectProfile = (profile: DemoProfile) => {
-    setActiveProfile(profile);
-    setEmail(profile.email);
-    setAccessKey(profile.key);
+  // Reset messages on tab change
+  const handleTabChange = (tab: AuthTab) => {
+    setActiveTab(tab);
     setErrorMessage(null);
+    setSuccessMessage(null);
   };
 
-  // Step 1: Initialize New Profile & Receive Cryptographic Access Key via Official Email
-  const handleRequestInitialization = async (e: React.FormEvent) => {
+  // Handle Login
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const cleanEmail = initEmail.trim().toLowerCase();
-    if (!cleanEmail) return;
-
-    setIsInitializing(true);
-    const clientKey = generateClientHashKey(cleanEmail);
-    const nameFormatted = initName.trim() || cleanEmail.split('@')[0].replace('.', ' ').toUpperCase();
+    setIsLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
 
     try {
-      const res = await AurexAPI.initializeProfile({
-        email: cleanEmail,
-        name: nameFormatted,
-        role: 'Institutional Operator',
+      const response = await AurexAPI.loginWithKey({
+        email: loginEmail.trim().toLowerCase(),
+        access_key: loginKey.trim().toUpperCase(),
       });
 
-      const finalKey = res?.access_key || clientKey;
+      if (response?.authenticated) {
+        const authUser = {
+          name: response.user?.name || loginEmail.split('@')[0].toUpperCase(),
+          role: response.user?.role || 'Institutional Operator',
+          email: loginEmail,
+          accessKey: loginKey,
+          method: 'Cryptographic SHA-256 Key',
+          loginTime: Date.now(),
+          isGuest: false,
+        };
 
-      // Save into browser persistent ledger
-      const currentLedger = JSON.parse(localStorage.getItem('AUREX_ENCLAVE_LEDGER') || '{}');
-      currentLedger[cleanEmail] = {
-        email: cleanEmail,
-        name: nameFormatted,
-        access_key: finalKey,
-        role: 'Institutional Operator',
-        timestamp: Date.now(),
-      };
-      localStorage.setItem('AUREX_ENCLAVE_LEDGER', JSON.stringify(currentLedger));
-
-      setIssuedDispatch({
-        access_key: finalKey,
-        email: cleanEmail,
-        name: nameFormatted,
-        lineage_hash: res?.lineage_hash || `SHA256:${clientKey.replace('AUREX-SEC-', '')}F91B`,
-        email_dispatch: res?.email_dispatch || {
-          from: 'AUREX Security Enclave <auth-enclave@aurex.intelligence>',
-          to: cleanEmail,
-          subject: `🏛️ [AUREX ENCLAVE] Your Institutional Access Key — ${finalKey}`,
-          gmail_compose_url: `https://mail.google.com/mail/u/0/?fs=1&tf=cm&to=${cleanEmail}&su=AUREX+Enterprise+Access+Key&body=Your+AUREX+Key:+${finalKey}`,
-        },
-      });
-    } catch {
-      // Local persistent fallback
-      const currentLedger = JSON.parse(localStorage.getItem('AUREX_ENCLAVE_LEDGER') || '{}');
-      currentLedger[cleanEmail] = {
-        email: cleanEmail,
-        name: nameFormatted,
-        access_key: clientKey,
-        role: 'Institutional Operator',
-        timestamp: Date.now(),
-      };
-      localStorage.setItem('AUREX_ENCLAVE_LEDGER', JSON.stringify(currentLedger));
-
-      setIssuedDispatch({
-        access_key: clientKey,
-        email: cleanEmail,
-        name: nameFormatted,
-        lineage_hash: `SHA256:${clientKey.replace('AUREX-SEC-', '')}89B2`,
-        email_dispatch: {
-          from: 'AUREX Security Enclave <auth-enclave@aurex.intelligence>',
-          to: cleanEmail,
-          subject: `🏛️ [AUREX ENCLAVE] Your Institutional Access Key — ${clientKey}`,
-          gmail_compose_url: `https://mail.google.com/mail/u/0/?fs=1&tf=cm&to=${cleanEmail}&su=AUREX+Enterprise+Access+Key&body=Your+AUREX+Key:+${clientKey}`,
-        },
-      });
-    }
-    setIsInitializing(false);
-  };
-
-  // Auto-Fill Issued Key into Login Terminal & Clear Errors
-  const handleApplyIssuedKey = () => {
-    if (issuedDispatch) {
-      setEmail(issuedDispatch.email);
-      setAccessKey(issuedDispatch.access_key);
-      setErrorMessage(null);
-      setInitModalOpen(false);
-      setIssuedDispatch(null);
+        localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(authUser));
+        setSuccessMessage('Authentication successful! Redirecting...');
+        setTimeout(() => navigate('/app/overview'), 500);
+      } else {
+        setErrorMessage(response?.detail || 'Authentication failed. Please check your credentials.');
+      }
+    } catch (error: any) {
+      setErrorMessage(
+        error?.message || 'Login failed. Please ensure your email is verified and your access key is correct.'
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Copy Key Helper
-  const handleCopyKey = () => {
-    if (issuedDispatch?.access_key) {
-      navigator.clipboard.writeText(issuedDispatch.access_key);
-      setCopiedKey(true);
-      setTimeout(() => setCopiedKey(false), 2000);
+  // Handle Sign Up
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      const response = await AurexAPI.signUp({
+        email: signupEmail.trim().toLowerCase(),
+        name: signupName.trim() || undefined,
+        role: signupRole,
+      });
+
+      if (response?.status?.includes('pending')) {
+        setSuccessMessage(
+          response?.message || 'Sign up successful! Please check your email for the verification code.'
+        );
+        setSignupCompleted(true);
+
+        // Auto-switch to verify tab and pre-fill email
+        setTimeout(() => {
+          setVerifyEmail(signupEmail);
+          handleTabChange('verify');
+        }, 1000);
+      } else {
+        setErrorMessage(response?.message || 'Sign up failed');
+      }
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Sign up failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  // Handle Email Verification
+  const handleVerifyEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    try {
+      const response = await AurexAPI.verifyEmail({
+        email: verifyEmail.trim().toLowerCase(),
+        verification_code: verifyCode.trim(),
+      });
+
+      if (response?.verified) {
+        setVerifyAccessKey(response?.access_key);
+        setSuccessMessage('Email verified! Your access key has been generated.');
+      } else {
+        setErrorMessage(response?.message || 'Verification failed');
+      }
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Verification failed. Please check your code and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#07090e] text-slate-100 flex font-sans overflow-hidden relative">
+      {/* Ambient Background Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(0,229,255,0.06),rgba(255,255,255,0))] pointer-events-none" />
+
+      {/* Editorial Left Hero Panel (Desktop) */}
+      <div className="hidden lg:flex lg:w-1/2 bg-[#0a0d14] p-12 flex-col justify-between relative border-r border-white/10 z-10">
+        <div className="flex items-center justify-between">
+          <Link to="/" className="group" title="AUREX Platform">
+            <AurexLogo size={34} withText textClassName="text-lg" />
+          </Link>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-sans font-medium">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Zero-Trust Authentication Enclave</span>
+          </div>
+        </div>
+
+        {/* Center Particle Visual & Clean Title */}
+        <div className="my-auto py-6 flex flex-col items-center text-center space-y-6">
+          <div className="w-full max-w-[380px] aspect-square relative flex items-center justify-center">
+            <ParticleCore className="w-full h-full" customRadius={135} particleCount={420} />
+          </div>
+
+          <div className="max-w-md space-y-3">
+            <h2 className="text-3xl sm:text-4xl font-display font-bold text-white tracking-tight leading-tight">
+              Institutional Access <br />
+              <span className="text-slate-400 font-normal">to Unified Intelligence.</span>
+            </h2>
+            <p className="text-slate-400 font-sans text-xs leading-relaxed">
+              Real-time point-in-time quantitative backtesting, DuckDB in-memory OLAP analytics, and grounded retail commerce with SHA-256 data lineage.
+            </p>
+          </div>
+        </div>
+
+        <div className="font-mono text-xs text-slate-400 flex justify-between items-center pt-6 border-t border-white/5">
+          <span className="text-slate-400 font-sans">AUREX Cognitive Engine v4.2</span>
+          <span className="flex items-center gap-1.5 text-lime-400">
+            <span className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
+            Active Enclave • Latency: 0.42ms
+          </span>
+        </div>
+      </div>
+
+      {/* Auth Panel Right */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-6 md:p-12 relative overflow-y-auto max-h-screen z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-md space-y-4 my-auto"
+        >
+          {/* Header */}
+          <div className="space-y-1">
+            <div className="lg:hidden flex items-center justify-between mb-3">
+              <AurexLogo size={32} withText />
+              <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
+                <ShieldCheck className="w-3 h-3" /> Zero-Trust
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-3 py-0.5 rounded-full border border-cyan-500/20 font-sans font-semibold">
+                Access Gateway
+              </span>
+              <span className="text-xs text-slate-400">• Cryptographic Authentication</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight pt-1">
+              AUREX Security Enclave
+            </h1>
+            <p className="text-slate-400 font-sans text-xs">
+              Sign in with your cryptographic access key or create a new account.
+            </p>
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="flex gap-2 p-1 rounded-xl bg-[#0f1420] border border-white/10">
+            {(['login', 'signup', 'verify'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab)}
+                className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === tab
+                    ? 'bg-cyan-500 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                {tab === 'login' && <LogIn className="w-3.5 h-3.5 inline mr-1" />}
+                {tab === 'signup' && <UserPlus className="w-3.5 h-3.5 inline mr-1" />}
+                {tab === 'verify' && <Mail className="w-3.5 h-3.5 inline mr-1" />}
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {/* Messages */}
+          {errorMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2"
+            >
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </motion.div>
+          )}
+
+          {successMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{successMessage}</span>
+            </motion.div>
+          )}
+
+          {/* Login Tab */}
+          <AnimatePresence mode="wait">
+            {activeTab === 'login' && (
+              <motion.form
+                key="login"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onSubmit={handleLogin}
+                className="space-y-4 text-xs font-sans"
+              >
+                <div>
+                  <label className="block text-xs text-slate-300 uppercase mb-1.5 font-medium">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="your.email@gmail.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    className="w-full bg-[#0d121c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-cyan-400 transition-colors font-mono text-xs placeholder:text-slate-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-300 uppercase mb-1.5 font-medium">
+                    Cryptographic Access Key
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      placeholder="AUREX-SEC-..."
+                      value={loginKey}
+                      onChange={(e) => setLoginKey(e.target.value)}
+                      className="w-full bg-[#0d121c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-cyan-400 transition-colors font-mono text-xs pr-10"
+                    />
+                    <Key className="w-4 h-4 text-slate-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Received via email after sign up and verification
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-obsidian-950 font-bold font-sans text-xs transition-all shadow-[0_0_20px_rgba(0,229,255,0.2)] disabled:opacity-50"
+                >
+                  <span>{isLoading ? 'Verifying...' : 'Sign In'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('signup')}
+                    className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                  >
+                    Don't have an account? Sign up →
+                  </button>
+                </div>
+              </motion.form>
+            )}
+
+            {/* Sign Up Tab */}
+            {activeTab === 'signup' && (
+              <motion.form
+                key="signup"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onSubmit={handleSignUp}
+                className="space-y-4 text-xs font-sans"
+              >
+                <div>
+                  <label className="block text-xs text-slate-300 uppercase mb-1.5 font-medium">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="your.email@gmail.com"
+                    value={signupEmail}
+                    onChange={(e) => setSignupEmail(e.target.value)}
+                    className="w-full bg-[#0d121c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-cyan-400 transition-colors font-mono text-xs placeholder:text-slate-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-300 uppercase mb-1.5 font-medium">
+                    Full Name (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Alex Mercer"
+                    value={signupName}
+                    onChange={(e) => setSignupName(e.target.value)}
+                    className="w-full bg-[#0d121c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-cyan-400 transition-colors font-mono text-xs placeholder:text-slate-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-300 uppercase mb-1.5 font-medium">
+                    Role
+                  </label>
+                  <select
+                    value={signupRole}
+                    onChange={(e) => setSignupRole(e.target.value)}
+                    className="w-full bg-[#0d121c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-cyan-400 transition-colors text-xs"
+                  >
+                    <option>Institutional Operator</option>
+                    <option>Quantitative Analyst</option>
+                    <option>Data Scientist</option>
+                    <option>Risk Manager</option>
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-obsidian-950 font-bold font-sans text-xs transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50"
+                >
+                  <span>{isLoading ? 'Creating Account...' : 'Create Account'}</span>
+                  <UserPlus className="w-4 h-4" />
+                </button>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('login')}
+                    className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                  >
+                    Already have an account? Sign in →
+                  </button>
+                </div>
+              </motion.form>
+            )}
+
+            {/* Verify Email Tab */}
+            {activeTab === 'verify' && (
+              <motion.form
+                key="verify"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onSubmit={handleVerifyEmail}
+                className="space-y-4 text-xs font-sans"
+              >
+                <div>
+                  <label className="block text-xs text-slate-300 uppercase mb-1.5 font-medium">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="your.email@gmail.com"
+                    value={verifyEmail}
+                    onChange={(e) => setVerifyEmail(e.target.value)}
+                    className="w-full bg-[#0d121c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-cyan-400 transition-colors font-mono text-xs placeholder:text-slate-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-slate-300 uppercase mb-1.5 font-medium">
+                    Verification Code (6 digits)
+                  </label>
+                  <input
+                    type="text"
+                    maxLength="6"
+                    pattern="\d{6}"
+                    required
+                    placeholder="000000"
+                    value={verifyCode}
+                    onChange={(e) =>
+                      setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                    }
+                    className="w-full bg-[#0d121c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-cyan-400 transition-colors font-mono text-lg text-center placeholder:text-slate-600 letter-spacing-wider"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Check your email for the verification code
+                  </p>
+                </div>
+
+                {verifyAccessKey && (
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
+                    <div className="text-xs text-emerald-400 font-semibold">Your Access Key:</div>
+                    <div className="font-mono text-sm text-emerald-300 break-all">
+                      {verifyAccessKey}
+                    </div>
+                    <p className="text-[11px] text-emerald-400">
+                      Save this key! You'll need it to sign in.
+                    </p>
+                  </div>
+                )}
+
+                {!verifyAccessKey && (
+                  <button
+                    type="submit"
+                    disabled={isLoading || verifyCode.length !== 6}
+                    className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 text-obsidian-950 font-bold font-sans text-xs transition-all shadow-[0_0_20px_rgba(59,130,246,0.2)] disabled:opacity-50"
+                  >
+                    <span>{isLoading ? 'Verifying...' : 'Verify Email'}</span>
+                    <Check className="w-4 h-4" />
+                  </button>
+                )}
+
+                {verifyAccessKey && (
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('login')}
+                    className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-obsidian-950 font-bold font-sans text-xs transition-all shadow-[0_0_20px_rgba(0,229,255,0.2)]"
+                  >
+                    <span>Go to Sign In</span>
+                    <LogIn className="w-4 h-4" />
+                  </button>
+                )}
+              </motion.form>
+            )}
+          </AnimatePresence>
+
+          {/* FIDO2 Notice */}
+          <div className="pt-4 border-t border-white/10 text-center">
+            <div className="text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
+              <Fingerprint className="w-3.5 h-3.5 text-slate-500" />
+              <span>FIDO2/WebAuthn hardware authentication: Not currently configured</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
 
   // Step 2: Sign In with Verified Cryptographic Key
   const handleLogin = async (e: React.FormEvent) => {
@@ -250,45 +570,10 @@ export const Auth: React.FC = () => {
     }
   };
 
-  // 1-Click Guest / Visitor Pass
-  const handleGuestLogin = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      const guestUser = {
-        name: 'Guest Visitor',
-        role: 'Evaluator / Guest Access',
-        email: 'guest.visitor@aurex.session',
-        method: 'Visitor 1-Click Pass',
-        loginTime: Date.now(),
-        isGuest: true,
-        sessionExpiry: Date.now() + 3600000, // 1 hour TTL
-      };
-      localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(guestUser));
-      setIsLoading(false);
-      navigate('/app/overview');
-    }, 400);
-  };
-
-  // FIDO2 / YubiKey Hardware Authentication Simulation
+  // FIDO2 / YubiKey Hardware Authentication - Not Currently Configured
   const handleFidoAuth = async () => {
-    setFidoStep('scanning');
-    setTimeout(() => {
-      setFidoStep('success');
-      setTimeout(() => {
-        const fidoUser = {
-          name: email === activeProfile.email ? activeProfile.name : email.split('@')[0].toUpperCase(),
-          role: email === activeProfile.email ? activeProfile.role : 'FIDO2 Enclave Operator',
-          email,
-          method: 'FIDO2 / YubiKey Hardware Security Key',
-          loginTime: Date.now(),
-          isGuest: false,
-        };
-        localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(fidoUser));
-        setFidoModalOpen(false);
-        navigate('/app/overview');
-      }, 700);
-    }, 1200);
-  };
+    setErrorMessage('FIDO2/WebAuthn hardware authentication is not yet configured in this environment.');
+    setFidoModalOpen(false);
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 flex font-sans overflow-hidden relative">
@@ -366,28 +651,6 @@ export const Auth: React.FC = () => {
             </p>
           </div>
 
-          {/* 1-Click Visitor Demo Access Button */}
-          <div className="p-3 rounded-2xl bg-gradient-to-r from-lime-500/10 via-emerald-500/10 to-cyan-500/10 border border-lime-500/25 shadow-[0_0_20px_rgba(212,249,56,0.08)] space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-white flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5 text-lime-400" />
-                <span>Evaluating as Guest?</span>
-              </span>
-              <span className="text-[10px] text-lime-400 font-mono bg-lime-500/10 px-2 py-0.5 rounded border border-lime-500/20">
-                No Key Needed
-              </span>
-            </div>
-            <button
-              onClick={handleGuestLogin}
-              disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-gradient-to-r from-lime-400 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 text-obsidian-950 font-bold font-sans text-xs transition-all shadow-[0_0_15px_rgba(212,249,56,0.2)] transform active:scale-[0.98]"
-            >
-              <Zap className="w-4 h-4 text-obsidian-950" />
-              <span>Continue as Guest Visitor (1-Click Demo)</span>
-              <ArrowRight className="w-4 h-4 text-obsidian-950" />
-            </button>
-          </div>
-
           {/* Prominent Profile Initialization Banner for New Users */}
           <div className="p-3.5 rounded-2xl bg-[#0c101a] border border-cyan-500/30 hover:border-cyan-400 transition-all space-y-2">
             <div className="flex items-center justify-between text-xs">
@@ -413,34 +676,6 @@ export const Auth: React.FC = () => {
               <Mail className="w-3.5 h-3.5 text-cyan-400" />
               <span>Initialize Profile & Receive Access Key</span>
             </button>
-          </div>
-
-          {/* Demo Credentials Quick-Fill Selector */}
-          <div className="space-y-1 font-sans">
-            <div className="flex items-center justify-between text-xs text-slate-300">
-              <span className="font-medium flex items-center gap-1.5">
-                <span>Or Select Demo Institutional Operator</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-mono">1-Click Autofill</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              {DEMO_PROFILES.map((profile, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleSelectProfile(profile)}
-                  className={`p-2 rounded-xl border text-left transition-all ${
-                    email === profile.email
-                      ? 'bg-cyan-500/15 border-cyan-400/60 shadow-[0_0_12px_rgba(0,229,255,0.15)]'
-                      : 'bg-[#0f1420] border-white/10 hover:border-white/20 text-slate-400'
-                  }`}
-                >
-                  <div className="text-[11px] font-bold text-white truncate">{profile.name}</div>
-                  <div className="text-[9px] text-cyan-400 font-mono truncate">{profile.shortRole}</div>
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Standard Form: Sign In with Cryptographic Key */}
@@ -636,31 +871,27 @@ export const Auth: React.FC = () => {
                         </div>
                       </div>
                       <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">
-                        OFFICIAL DISPATCH
+                        DISPATCH SENT
                       </span>
                     </div>
 
                     <div className="text-xs text-slate-300 space-y-1">
                       <div className="text-slate-400 text-[11px]">To: <span className="text-white font-mono">{issuedDispatch.email}</span></div>
-                      <div className="text-slate-400 text-[11px]">Clearance: <span className="text-cyan-300 font-mono">Tier-1 Verified Enclave</span></div>
+                      <div className="text-slate-400 text-[11px]">Status: <span className="text-cyan-300 font-mono">Pending Email Verification</span></div>
                     </div>
 
-                    {/* Issued Key Box */}
+                    {/* Message Box */}
                     <div className="p-3 bg-obsidian-950 rounded-xl border border-cyan-500/30 space-y-1.5">
-                      <div className="text-[10px] font-mono text-cyan-400 uppercase font-bold flex justify-between items-center">
-                        <span>YOUR CRYPTOGRAPHIC ACCESS HASH KEY</span>
-                        <button onClick={handleCopyKey} className="text-slate-400 hover:text-white flex items-center gap-1">
-                          {copiedKey ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                          <span>{copiedKey ? 'Copied' : 'Copy'}</span>
-                        </button>
+                      <div className="text-[10px] font-mono text-cyan-400 uppercase font-bold">
+                        NEXT STEPS
                       </div>
-                      <div className="font-mono text-sm font-bold text-white bg-[#05070a] p-2.5 rounded-lg border border-white/10 break-all select-all text-cyan-300">
-                        {issuedDispatch.access_key}
+                      <div className="font-mono text-xs font-normal text-slate-300 leading-relaxed">
+                        {issuedDispatch.email_dispatch?.message || 'Check your email for the official AUREX Security Enclave dispatch containing your unique cryptographic access key. Once received, enter it above to sign in.'}
                       </div>
                     </div>
 
                     <div className="text-[10px] text-slate-400 font-mono">
-                      Lineage Hash: {issuedDispatch.lineage_hash || 'SHA256:7F89B2C41D0E...'}
+                      Lineage: {issuedDispatch.lineage_hash || 'SHA256:...'}
                     </div>
                   </div>
 
@@ -670,21 +901,8 @@ export const Auth: React.FC = () => {
                       className="flex-1 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-obsidian-950 font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-1.5"
                     >
                       <Check className="w-4 h-4" />
-                      <span>Apply Key & Sign In Now</span>
+                      <span>Got It, I'll Check My Email</span>
                     </button>
-
-                    {issuedDispatch.email_dispatch?.gmail_compose_url && (
-                      <a
-                        href={issuedDispatch.email_dispatch.gmail_compose_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold flex items-center gap-1.5 transition-all"
-                        title="Open in Gmail"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span>Gmail</span>
-                      </a>
-                    )}
                   </div>
                 </div>
               )}
@@ -725,49 +943,21 @@ export const Auth: React.FC = () => {
 
               {fidoStep === 'prompt' && (
                 <div className="text-center py-4 space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-400/30 mx-auto flex items-center justify-center text-cyan-400">
-                    <Fingerprint className="w-8 h-8 animate-pulse" />
+                  <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-400/30 mx-auto flex items-center justify-center text-rose-400">
+                    <Fingerprint className="w-8 h-8" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-base font-bold text-white">Touch Your Security Key</h3>
+                    <h3 className="text-base font-bold text-white">FIDO2/WebAuthn Not Configured</h3>
                     <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                      Insert your YubiKey or touch your biometric fingerprint sensor to verify institutional credentials for <strong>{email}</strong>.
+                      Hardware security key authentication requires a configured WebAuthn/FIDO2 environment. Please use the standard login method with your cryptographic access key instead.
                     </p>
                   </div>
                   <button
-                    onClick={handleFidoAuth}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-obsidian-950 font-bold text-xs shadow-[0_0_20px_rgba(0,229,255,0.25)] transition-all"
+                    onClick={() => setFidoModalOpen(false)}
+                    className="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs transition-all"
                   >
-                    Simulate Hardware Touch & Authenticate
+                    Dismiss
                   </button>
-                </div>
-              )}
-
-              {fidoStep === 'scanning' && (
-                <div className="text-center py-6 space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-cyan-500/20 border border-cyan-400 mx-auto flex items-center justify-center text-cyan-400 animate-spin">
-                    <Sparkles className="w-8 h-8" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-base font-bold text-white">Verifying WebAuthn Challenge...</h3>
-                    <p className="text-xs text-slate-400">
-                      Exchanging public key credentials with Zero-Trust Enclave...
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {fidoStep === 'success' && (
-                <div className="text-center py-6 space-y-4">
-                  <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400 mx-auto flex items-center justify-center text-emerald-400">
-                    <CheckCircle2 className="w-8 h-8" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-base font-bold text-emerald-400">FIDO2 Signature Verified!</h3>
-                    <p className="text-xs text-slate-300">
-                      Redirecting to AUREX Executive Command Center...
-                    </p>
-                  </div>
                 </div>
               )}
             </motion.div>

@@ -27,7 +27,7 @@ export default {
         },
         cyan: {
           DEFAULT: '#00E5FF',
-          400: '#38EDFF',
+          400: '#38f8ff',
           500: '#00E5FF',
           600: '#00B8CC',
           glow: 'rgba(0, 229, 255, 0.15)',
