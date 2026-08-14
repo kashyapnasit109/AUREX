@@ -32,7 +32,7 @@ export const Aiden: React.FC = () => {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const handleSendMessage = (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputQuery;
     if (!text.trim()) return;
 
@@ -48,8 +48,43 @@ export const Aiden: React.FC = () => {
     setInputQuery('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      setIsTyping(false);
+    const apiRes = await import('../services/api').then(m => m.AurexAPI.sendAidenChat([
+      { role: 'user', content: text }
+    ]));
+
+    setIsTyping(false);
+
+    if (apiRes) {
+      const formattedProducts: RetailProduct[] = (apiRes.suggested_products || []).map((p: any) => ({
+        id: p.sku,
+        name: p.name,
+        brand: p.brand,
+        price: p.price,
+        rating: 4.9,
+        reviewsCount: 1420,
+        inStock: p.inventory > 0,
+        matchScore: p.match_score,
+        ancScore: p.scores.anc_isolation,
+        batteryScore: p.scores.battery_efficiency,
+        weightScore: p.scores.weight_ergonomics,
+        keySpecs: [p.key_feature],
+        description: `Verified in stock (${p.inventory} units) with SHA-256 cryptographic lineage hash ${apiRes.lineage_trace.sha256_hash.substring(0, 12)}...`
+      }));
+
+      const aiResponse = {
+        id: `m-${Date.now() + 1}`,
+        sender: 'aiden' as const,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: apiRes.message,
+        products: formattedProducts,
+        sources: [
+          { table: apiRes.lineage_trace.source_table, records: `${apiRes.lineage_trace.records_queried} warehouse rows scanned` },
+          { table: 'SHA256_LINEAGE_LEDGER', records: `Hash: ${apiRes.lineage_trace.sha256_hash.substring(0, 16)}...` },
+          { table: 'REALTIME_TELEMETRY', records: `Latency: ${apiRes.lineage_trace.execution_ms}ms` },
+        ],
+      };
+      setMessages((prev) => [...prev, aiResponse]);
+    } else {
       const aiResponse = {
         id: `m-${Date.now() + 1}`,
         sender: 'aiden' as const,
@@ -63,7 +98,7 @@ export const Aiden: React.FC = () => {
         ],
       };
       setMessages((prev) => [...prev, aiResponse]);
-    }, 1200);
+    }
   };
 
   const addToCart = (product: RetailProduct) => {

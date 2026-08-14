@@ -32,13 +32,50 @@ export const DataMart: React.FC = () => {
   const [activeView, setActiveView] = useState<'regional' | 'monthly' | 'table'>('regional');
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [regionalData, setRegionalData] = useState(mockRegionalMetrics);
+  const [insights, setInsights] = useState(mockAutonomousInsights);
 
-  const handleRefresh = () => {
+  const fetchLiveMetrics = async () => {
     setIsRefreshing(true);
-    setTimeout(() => setIsRefreshing(false), 500);
+    const apiRes = await import('../services/api').then(m => m.AurexAPI.getDataMartMetrics({
+      dataset: selectedDataset,
+      region: 'All'
+    }));
+
+    if (apiRes) {
+      if (apiRes.regional_matrix && apiRes.regional_matrix.length > 0) {
+        const formatted = apiRes.regional_matrix.map((r: any) => ({
+          region: r.region,
+          grossRevenue: `$${(r.revenue / 1000000).toFixed(1)}M`,
+          growthMoM: `${r.growth_pct >= 0 ? '+' : ''}${r.growth_pct}%`,
+          ordersCount: r.order_count.toLocaleString(),
+          avgBasketValue: `$${r.avg_order_value.toFixed(2)}`,
+          churnRiskScore: `${r.churn_risk_score}/5.0`,
+          status: r.churn_risk_score < 2.0 ? 'Optimal Growth' : 'Action Required'
+        }));
+        setRegionalData(formatted);
+      }
+
+      if (apiRes.insights && apiRes.insights.length > 0) {
+        const formattedInsights = apiRes.insights.map((ins: any) => ({
+          id: ins.id,
+          title: ins.title,
+          description: ins.description,
+          impact: ins.impact_tier,
+          confidence: `${ins.confidence_pct}%`,
+          action: ins.action_item
+        }));
+        setInsights(formattedInsights);
+      }
+    }
+    setIsRefreshing(false);
   };
 
-  const filteredRegions = mockRegionalMetrics.filter(
+  const handleRefresh = () => {
+    fetchLiveMetrics();
+  };
+
+  const filteredRegions = regionalData.filter(
     (r) =>
       r.region.toLowerCase().includes(searchQuery.toLowerCase()) ||
       r.status.toLowerCase().includes(searchQuery.toLowerCase())
@@ -115,7 +152,7 @@ export const DataMart: React.FC = () => {
           </div>
 
           <div className="space-y-3">
-            {mockAutonomousInsights.map((insight) => (
+            {insights.map((insight) => (
               <motion.div
                 key={insight.id}
                 initial={{ opacity: 0, y: 10 }}

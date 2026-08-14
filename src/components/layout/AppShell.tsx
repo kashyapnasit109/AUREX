@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, NavLink, useLocation, Link } from 'react-router-dom';
 import {
   Activity,
@@ -7,25 +7,39 @@ import {
   MessageSquare,
   Shield,
   ShieldCheck,
-  Cpu,
   Radio,
+  Zap,
+  Sparkles,
+  Search,
+  Server,
+  Play
 } from 'lucide-react';
 import { TickerTape } from './TickerTape';
 import { AurexLogo } from '../brand/AurexLogo';
+import { CommandPalette } from '../common/CommandPalette';
 
 export const AppShell: React.FC = () => {
   const location = useLocation();
+  const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
 
   const getBreadcrumb = () => {
     switch (location.pathname) {
       case '/app/overview':
         return { domain: 'Executive', title: 'Tri-Domain Command Center' };
+      case '/app/intelligence':
+        return { domain: 'Intelligence Core', title: 'Closed-Loop Telemetry & Convergence' };
+      case '/app/insights':
+        return { domain: 'Insight Engine', title: 'Autonomous Confidence-Rated Signals' };
       case '/app/quant':
         return { domain: 'Quantitative', title: 'Quant Studio — Strategy Backtesting' };
       case '/app/datamart':
         return { domain: 'Enterprise', title: 'DataMart Analytics Explorer' };
       case '/app/aiden':
         return { domain: 'Retail AI', title: 'Aiden Grounded Intelligence' };
+      case '/app/data':
+        return { domain: 'Architecture', title: 'Enterprise Data Hub & Quality Center' };
+      case '/app/workflows':
+        return { domain: 'Automation', title: 'Autonomous Workflow Engine' };
       default:
         return { domain: 'Platform', title: 'System Overview' };
     }
@@ -48,11 +62,15 @@ export const AppShell: React.FC = () => {
           </Link>
 
           {/* Navigation Items */}
-          <nav className="flex flex-col gap-3">
+          <nav className="flex flex-col gap-2.5">
             <AppNavItem to="/app/overview" icon={<Activity className="w-5 h-5" />} label="Overview" />
+            <AppNavItem to="/app/intelligence" icon={<Zap className="w-5 h-5 text-lime-400" />} label="Intelligence Core" />
+            <AppNavItem to="/app/insights" icon={<Sparkles className="w-5 h-5 text-cyan-400" />} label="Insight Engine" />
             <AppNavItem to="/app/quant" icon={<Terminal className="w-5 h-5" />} label="Quant Studio" />
             <AppNavItem to="/app/datamart" icon={<Database className="w-5 h-5" />} label="DataMart" />
             <AppNavItem to="/app/aiden" icon={<MessageSquare className="w-5 h-5" />} label="Aiden AI" />
+            <AppNavItem to="/app/data" icon={<Server className="w-5 h-5 text-amber-400" />} label="Data Hub" />
+            <AppNavItem to="/app/workflows" icon={<Play className="w-5 h-5 text-purple-400" />} label="Workflows" />
             <div className="w-6 h-px bg-white/10 my-1 mx-auto" />
             <AppNavItem to="/security" icon={<Shield className="w-5 h-5" />} label="Zero-Bias Trust" />
           </nav>
@@ -71,7 +89,7 @@ export const AppShell: React.FC = () => {
         {/* Global Live Telemetry Ticker */}
         <TickerTape />
 
-        {/* Top Command Bar without AI Command Palette search */}
+        {/* Top Command Bar with Command Palette Trigger */}
         <header className="h-16 border-b border-white/5 flex items-center justify-between px-6 md:px-8 bg-obsidian-900/60 backdrop-blur-md shrink-0 z-20">
           {/* Breadcrumb Info */}
           <div className="flex items-center gap-3 text-xs font-sans">
@@ -84,18 +102,24 @@ export const AppShell: React.FC = () => {
             </span>
           </div>
 
+          {/* Command Palette Trigger Button */}
+          <button
+            onClick={() => setCmdPaletteOpen(true)}
+            className="hidden md:flex items-center gap-3 px-4 py-1.5 rounded-xl bg-obsidian-950 border border-white/10 hover:border-lime-500/40 text-slate-400 hover:text-white transition-all text-xs font-mono"
+          >
+            <Search className="w-3.5 h-3.5 text-lime-400" />
+            <span>Search AUREX Platform...</span>
+            <kbd className="px-1.5 py-0.5 text-[10px] bg-obsidian-850 rounded border border-white/10 text-slate-300">
+              ⌘K
+            </kbd>
+          </button>
+
           {/* Clean Enterprise Status Telemetry */}
           <div className="flex items-center gap-3 text-xs font-sans">
             {/* Look-Ahead Bias Indicator */}
             <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 font-medium">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Zero Look-Ahead Bias: Enforced</span>
-            </div>
-
-            {/* Ingestion Stream Badge */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 font-mono text-[11px]">
-              <Cpu className="w-3.5 h-3.5" />
-              <span>4.89 PFLOPS Core</span>
             </div>
 
             {/* Live Environment Badge */}
@@ -111,6 +135,9 @@ export const AppShell: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Global Command Palette */}
+      <CommandPalette isOpen={cmdPaletteOpen} onClose={() => setCmdPaletteOpen(false)} />
     </div>
   );
 };
