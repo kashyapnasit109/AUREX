@@ -12,7 +12,8 @@ import {
   Sparkles,
   Search,
   Server,
-  Play
+  Play,
+  Presentation
 } from 'lucide-react';
 import { TickerTape } from './TickerTape';
 import { AurexLogo } from '../brand/AurexLogo';
@@ -26,6 +27,8 @@ export const AppShell: React.FC = () => {
     switch (location.pathname) {
       case '/app/overview':
         return { domain: 'Executive', title: 'Tri-Domain Command Center' };
+      case '/app/pitch':
+        return { domain: 'Presentation Mode', title: 'Interactive Hackathon Pitch Deck' };
       case '/app/intelligence':
         return { domain: 'Intelligence Core', title: 'Closed-Loop Telemetry & Convergence' };
       case '/app/insights':
@@ -64,12 +67,13 @@ export const AppShell: React.FC = () => {
           {/* Navigation Items */}
           <nav className="flex flex-col gap-2.5">
             <AppNavItem to="/app/overview" icon={<Activity className="w-5 h-5" />} label="Overview" />
+            <AppNavItem to="/app/pitch" icon={<Presentation className="w-5 h-5 text-amber-400" />} label="Pitch Deck" />
             <AppNavItem to="/app/intelligence" icon={<Zap className="w-5 h-5 text-lime-400" />} label="Intelligence Core" />
             <AppNavItem to="/app/insights" icon={<Sparkles className="w-5 h-5 text-cyan-400" />} label="Insight Engine" />
             <AppNavItem to="/app/quant" icon={<Terminal className="w-5 h-5" />} label="Quant Studio" />
             <AppNavItem to="/app/datamart" icon={<Database className="w-5 h-5" />} label="DataMart" />
             <AppNavItem to="/app/aiden" icon={<MessageSquare className="w-5 h-5" />} label="Aiden AI" />
-            <AppNavItem to="/app/data" icon={<Server className="w-5 h-5 text-amber-400" />} label="Data Hub" />
+            <AppNavItem to="/app/data" icon={<Server className="w-5 h-5 text-indigo-400" />} label="Data Hub" />
             <AppNavItem to="/app/workflows" icon={<Play className="w-5 h-5 text-purple-400" />} label="Workflows" />
             <div className="w-6 h-px bg-white/10 my-1 mx-auto" />
             <AppNavItem to="/security" icon={<Shield className="w-5 h-5" />} label="Zero-Bias Trust" />
@@ -116,6 +120,15 @@ export const AppShell: React.FC = () => {
 
           {/* Clean Enterprise Status Telemetry */}
           <div className="flex items-center gap-3 text-xs font-sans">
+            {/* Pitch Deck Quick Button */}
+            <Link
+              to="/app/pitch"
+              className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-medium hover:bg-amber-500/20 transition-all"
+            >
+              <Presentation className="w-3.5 h-3.5" />
+              <span>Pitch Deck</span>
+            </Link>
+
             {/* Look-Ahead Bias Indicator */}
             <div className="hidden lg:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 font-medium">
               <ShieldCheck className="w-3.5 h-3.5" />

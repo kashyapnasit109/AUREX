@@ -13,6 +13,7 @@ import { Customer360 } from './pages/Customer360';
 import { ProductIntelligence } from './pages/ProductIntelligence';
 import { DataHub } from './pages/DataHub';
 import { WorkflowEngine } from './pages/WorkflowEngine';
+import { PitchDeck } from './pages/PitchDeck';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/app" element={<AppShell />}>
         <Route index element={<Navigate to="/app/overview" replace />} />
         <Route path="overview" element={<Overview />} />
+        <Route path="pitch" element={<PitchDeck />} />
         <Route path="intelligence" element={<IntelligenceCore />} />
         <Route path="insights" element={<InsightEngine />} />
         <Route path="quant" element={<QuantStudio />} />
