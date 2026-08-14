@@ -1,5 +1,5 @@
 # AUREX — Enterprise Intelligence Platform
-### PS-05: Unified Analytics + Quantitative Strategy Intelligence + Grounded Retail AI
+### Unified Analytics + Quantitative Strategy Intelligence + Grounded Retail AI
 
 ![AUREX Platform](public/aurex-logo.svg)
 
