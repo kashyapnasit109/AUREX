@@ -17,3 +17,10 @@ def execute_stress_test(request: StressTestRequest):
     Executes market shock, volatility spike, and slippage stress testing.
     """
     return QuantEngine.run_stress_test(request)
+
+@router.get("/experiment")
+def get_experiment_lab():
+    """
+    Returns 3-strategy side-by-side comparison matrix with SeekAI claude-opus-5 verdict.
+    """
+    return QuantEngine.run_experiment_lab()

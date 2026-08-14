@@ -96,11 +96,25 @@ class AidenEngine:
             f"Verified physical warehouse inventory: {top_product.inventory} units available across primary nodes.",
         ]
         
-        message_text = (
-            f"Based on your requirements, the top grounded match is the **{top_product.name}** "
-            f"({top_product.match_score}% match score), featuring 99% Cabin ANC isolation and 48-hour battery. "
-            f"Current warehouse inventory is {top_product.inventory} units."
+        # Use SeekAI claude-opus-5 model if API key is present
+        from app.services.seek_ai import SeekAIService
+        
+        system_context = (
+            f"You are AUREX Aiden, an institutional retail AI assistant. "
+            f"Ground your answer strictly in these catalog rows: {top_product.name} ({top_product.match_score}% match, ANC {top_product.scores.anc_isolation}%, Battery {top_product.scores.battery_efficiency}%). "
+            f"Do not invent facts. Keep output professional and concise."
         )
+        
+        seek_response = SeekAIService.query_claude(last_msg, system_instruction=system_context)
+        
+        if seek_response:
+            message_text = seek_response
+        else:
+            message_text = (
+                f"Based on your requirements, the top grounded match is the **{top_product.name}** "
+                f"({top_product.match_score}% match score), featuring 99% Cabin ANC isolation and 48-hour battery. "
+                f"Current warehouse inventory is {top_product.inventory} units."
+            )
 
         # Cross-module proactive event surfacing if event detected
         if cross_module_event:

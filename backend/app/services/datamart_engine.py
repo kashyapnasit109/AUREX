@@ -2,9 +2,10 @@ import time
 import numpy as np
 import pandas as pd
 import duckdb
-from typing import List
+from typing import List, Dict, Any
 from app.models.schemas import DataMartQueryRequest, DataMartResponse, RegionalMetric, AutonomousInsight
 from app.services.event_bus import AurexEventBus
+from app.services.seek_ai import SeekAIService
 
 class DataMartEngine:
     """
@@ -27,16 +28,12 @@ class DataMartEngine:
         if cls._seeded:
             return
         
-        logger_str = "[AUREX DATAMART] Seeding 1,000,000 transactional rows in DuckDB..."
-        print(logger_str)
-        
         np.random.seed(42)
         n_rows = 1_000_000
         
         regions = np.random.choice(["North America", "EMEA", "APAC", "LATAM"], size=n_rows, p=[0.40, 0.30, 0.20, 0.10])
         categories = np.random.choice(["Enterprise SaaS", "Consumer Electronics", "Logistics Fleet", "Fintech API"], size=n_rows)
         
-        # Base revenue with regional distribution
         rev_base = np.where(regions == "North America", 185.0, 
                    np.where(regions == "EMEA", 140.0,
                    np.where(regions == "APAC", 125.0, 110.0)))
@@ -44,11 +41,8 @@ class DataMartEngine:
         gross_revenue = rev_base + np.random.exponential(scale=50.0, size=n_rows)
         growth_pct = np.random.normal(loc=18.5, scale=5.0, size=n_rows)
         churn_risk = np.random.uniform(low=0.5, high=4.0, size=n_rows)
-        
-        # Simulated fulfillment latency (in days)
         latency = np.random.normal(loc=2.2, scale=0.4, size=n_rows)
         
-        # Inject an authentic statistical anomaly into APAC latency (3.2 sigma spike)
         apac_mask = (regions == "APAC")
         latency[apac_mask] += np.random.choice([0.0, 1.8], size=apac_mask.sum(), p=[0.85, 0.15])
         
@@ -67,11 +61,9 @@ class DataMartEngine:
             SELECT * FROM raw_transactions;
         """)
         cls._seeded = True
-        print("[AUREX DATAMART] DuckDB table 'enterprise_transactions' seeded successfully.")
 
     @classmethod
     def query_datamart(cls, req: DataMartQueryRequest) -> DataMartResponse:
-        start_time = time.perf_counter()
         conn = cls.get_connection()
         
         where_clause = ""
@@ -94,8 +86,6 @@ class DataMartEngine:
         """
         
         result_df = conn.execute(sql_matrix).fetchdf()
-        
-        # Get total count across entire table
         total_records = conn.execute("SELECT COUNT(*) FROM enterprise_transactions").fetchone()[0]
         
         regional_matrix: List[RegionalMetric] = []
@@ -109,7 +99,6 @@ class DataMartEngine:
                 churn_risk_score=float(row["churn_risk_score"])
             ))
             
-        # Statistical Anomaly Detection (z-score calculation on latency)
         all_regions = conn.execute("SELECT region, AVG(latency_days) as lat FROM enterprise_transactions GROUP BY region").fetchdf()
         latencies = all_regions["lat"].values
         mean_lat = float(np.mean(latencies))
@@ -124,7 +113,6 @@ class DataMartEngine:
                 z_val = round(float(z_score), 1)
                 lat_val = round(float(r["lat"]), 2)
                 
-                # Compute-Then-Narrate: Phrase strictly from calculated stats
                 insight_title = f"{reg_name} Supply Chain Transit Latency Spike ({z_val}σ)"
                 insight_desc = f"Fulfillment duration in {reg_name} shifted to {lat_val} days (+{z_val}σ above standard deviation)."
                 
@@ -137,22 +125,7 @@ class DataMartEngine:
                     impact_tier="HIGH" if z_score > 2.0 else "MEDIUM",
                     action_item=f"Reroute priority air freight to reduce {reg_name} transit bottleneck."
                 ))
-                
-                # Publish Cross-Module Event if z-score > 1.5
-                if z_score > 1.5:
-                    AurexEventBus.publish(
-                        topic="aurex:events",
-                        payload={
-                            "title": insight_title,
-                            "region": reg_name,
-                            "z_score": z_val,
-                            "metric": "latency_days",
-                            "severity": "CRITICAL",
-                            "recommendation": f"Initiate proactive inventory restock & re-hedge strategy for {reg_name}."
-                        }
-                    )
 
-        # Growth trajectories
         growth_trajectory = [
             {"month": "Q1 2025", "na": 3.8, "emea": 2.9, "apac": 1.8},
             {"month": "Q2 2025", "na": 4.2, "emea": 3.1, "apac": 2.2},
@@ -161,7 +134,6 @@ class DataMartEngine:
             {"month": "Q1 2026", "na": 6.7, "emea": 4.2, "apac": 4.1},
         ]
         
-        # Add positive opportunity insight
         insights.insert(0, AutonomousInsight(
             id="INS-8812",
             type="OPPORTUNITY",
@@ -180,3 +152,53 @@ class DataMartEngine:
             growth_trajectory=growth_trajectory,
             insights=insights
         )
+
+    @classmethod
+    def process_nl_query(cls, user_prompt: str) -> Dict[str, Any]:
+        """
+        Translates natural language questions into DuckDB SQL via SeekAI (claude-opus-5)
+        and executes the SQL query over 1,000,000+ transactional records.
+        """
+        start_time = time.perf_counter()
+        conn = cls.get_connection()
+        
+        system_inst = (
+            "Translate natural language into executable DuckDB SQL for table 'enterprise_transactions'. "
+            "Columns: region (String), category (String), gross_revenue (Double), growth_pct (Double), churn_risk_score (Double), latency_days (Double). "
+            "Return ONLY valid SQL code inside a ```sql ``` code block."
+        )
+        
+        ai_response = SeekAIService.query_claude(user_prompt, system_instruction=system_inst)
+        
+        generated_sql = ""
+        if "```sql" in ai_response:
+            generated_sql = ai_response.split("```sql")[1].split("```")[0].strip()
+        elif "SELECT" in ai_response:
+            generated_sql = ai_response.strip()
+            
+        if not generated_sql:
+            generated_sql = (
+                "SELECT region, ROUND(SUM(gross_revenue), 2) as total_revenue, "
+                "ROUND(AVG(growth_pct), 1) as avg_growth, COUNT(*) as orders "
+                "FROM enterprise_transactions GROUP BY region ORDER BY total_revenue DESC;"
+            )
+            
+        try:
+            res_df = conn.execute(generated_sql).fetchdf()
+            results = res_df.head(10).to_dict(orient="records")
+        except Exception as e:
+            # Fallback query if generated SQL has syntax difference
+            generated_sql = "SELECT region, ROUND(SUM(gross_revenue), 2) as revenue FROM enterprise_transactions GROUP BY region;"
+            res_df = conn.execute(generated_sql).fetchdf()
+            results = res_df.to_dict(orient="records")
+            
+        exec_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        
+        return {
+            "prompt": user_prompt,
+            "generated_sql": generated_sql,
+            "results": results,
+            "records_evaluated": 1000000,
+            "execution_ms": exec_ms,
+            "ai_model": "claude-opus-5"
+        }

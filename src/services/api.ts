@@ -59,6 +59,20 @@ export class AurexAPI {
   }
 
   /**
+   * Execute 3-Strategy Experiment Comparison Lab
+   */
+  static async runExperiment() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/quant/experiment`);
+      if (!res.ok) throw new Error('Experiment lab failed');
+      return await res.json();
+    } catch (err) {
+      console.warn('[AUREX API] Experiment Lab API fallback:', err);
+      return null;
+    }
+  }
+
+  /**
    * Query Real DuckDB DataMart Metrics & Insights
    */
   static async getDataMartMetrics(params: DataMartQueryParams) {
@@ -72,6 +86,24 @@ export class AurexAPI {
       return await res.json();
     } catch (err) {
       console.warn('[AUREX API] DataMart API fallback:', err);
+      return null;
+    }
+  }
+
+  /**
+   * Execute Natural Language DuckDB SQL Query via SeekAI (claude-opus-5)
+   */
+  static async runNLQuery(prompt: string) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/datamart/nl-query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      if (!res.ok) throw new Error('NL Query failed');
+      return await res.json();
+    } catch (err) {
+      console.warn('[AUREX API] NL Query API fallback:', err);
       return null;
     }
   }

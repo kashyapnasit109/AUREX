@@ -29,11 +29,23 @@ import {
 
 export const DataMart: React.FC = () => {
   const [selectedDataset, setSelectedDataset] = useState('Retail Transactions FY25 (42.8M Records)');
-  const [activeView, setActiveView] = useState<'regional' | 'monthly' | 'table'>('regional');
+  const [activeView, setActiveView] = useState<'regional' | 'monthly' | 'table' | 'nl_query'>('regional');
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [regionalData, setRegionalData] = useState(mockRegionalMetrics);
   const [insights, setInsights] = useState(mockAutonomousInsights);
+
+  const [nlPrompt, setNlPrompt] = useState('Show me the regions with declining revenue but increasing order volume');
+  const [nlResult, setNlResult] = useState<any>(null);
+  const [isNLQuerying, setIsNLQuerying] = useState(false);
+
+  const handleNLQuery = async () => {
+    if (!nlPrompt.trim()) return;
+    setIsNLQuerying(true);
+    const res = await import('../services/api').then(m => m.AurexAPI.runNLQuery(nlPrompt));
+    if (res) setNlResult(res);
+    setIsNLQuerying(false);
+  };
 
   const fetchLiveMetrics = async () => {
     setIsRefreshing(true);
@@ -259,6 +271,17 @@ export const DataMart: React.FC = () => {
                   <TableIcon className="w-3.5 h-3.5" />
                   <span>Tabular Grid</span>
                 </button>
+                <button
+                  onClick={() => setActiveView('nl_query')}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg transition-all ${
+                    activeView === 'nl_query'
+                      ? 'bg-purple-500 text-white font-bold'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Natural Language SQL Builder</span>
+                </button>
               </div>
 
               {/* Inline Search Filter */}
@@ -405,6 +428,63 @@ export const DataMart: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {activeView === 'nl_query' && (
+              <div className="space-y-4 font-sans">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={nlPrompt}
+                    onChange={(e) => setNlPrompt(e.target.value)}
+                    placeholder="Ask AUREX to generate SQL and query DuckDB 1M records..."
+                    className="flex-1 bg-obsidian-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-purple-500 font-sans"
+                  />
+                  <button
+                    onClick={handleNLQuery}
+                    disabled={isNLQuerying}
+                    className="px-5 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-white text-xs font-bold font-mono transition-all flex items-center gap-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>{isNLQuerying ? 'Generating SQL...' : 'Run Query'}</span>
+                  </button>
+                </div>
+
+                {nlResult && (
+                  <div className="space-y-3 font-mono text-xs">
+                    <div className="p-4 rounded-2xl bg-obsidian-950 border border-purple-500/30 space-y-2">
+                      <div className="flex justify-between items-center text-[10px] text-purple-400">
+                        <span>GENERATED DUCKDB SQL (SeekAI claude-opus-5)</span>
+                        <span>Execution: {nlResult.execution_ms}ms • 1.0M Records</span>
+                      </div>
+                      <pre className="text-lime-400 text-[11px] overflow-x-auto p-2 rounded bg-obsidian-900 border border-white/5">
+                        {nlResult.generated_sql}
+                      </pre>
+                    </div>
+
+                    <div className="overflow-x-auto max-h-60 rounded-xl border border-white/10 bg-obsidian-950">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead className="bg-obsidian-900 text-slate-400 uppercase text-[10px]">
+                          <tr>
+                            {Object.keys(nlResult.results[0] || {}).map((k) => (
+                              <th key={k} className="py-2.5 px-3">{k}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {nlResult.results.map((r: any, idx: number) => (
+                            <tr key={idx} className="hover:bg-white/5">
+                              {Object.values(r).map((v: any, j: number) => (
+                                <td key={j} className="py-2.5 px-3 text-slate-200">{String(v)}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

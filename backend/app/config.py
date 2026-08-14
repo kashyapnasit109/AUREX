@@ -9,5 +9,8 @@ class Settings:
         "http://127.0.0.1:5173",
         "http://localhost:3000",
     ]
+    SEEK_AI_URL: str = "https://seekai.cc/v1/messages"
+    SEEK_AI_KEY: str = os.getenv("NEW_API_KEY", "")
+    SEEK_AI_MODEL: str = "claude-opus-5"
 
 settings = Settings()

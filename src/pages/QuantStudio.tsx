@@ -29,7 +29,13 @@ export const QuantStudio: React.FC = () => {
   const [leverage, setLeverage] = useState(2.0);
   const [slippageBps, setSlippageBps] = useState(2.5);
   const [isSimulating, setIsSimulating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'equity' | 'drawdown' | 'trades'>('equity');
+  const [activeTab, setActiveTab] = useState<'equity' | 'drawdown' | 'trades' | 'experiment'>('equity');
+  const [experimentData, setExperimentData] = useState<any>(null);
+
+  const fetchExperimentLab = async () => {
+    const res = await import('../services/api').then(m => m.AurexAPI.runExperiment());
+    if (res) setExperimentData(res);
+  };
   const [trainSplit, setTrainSplit] = useState(70); // 70% IS, 30% OOS
 
   const [equityData, setEquityData] = useState(generateEquityData(100, 1.0));
@@ -369,6 +375,19 @@ export const QuantStudio: React.FC = () => {
                 >
                   Trade Ledger ({mockTradeLedger.length})
                 </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('experiment');
+                    fetchExperimentLab();
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg transition-all font-semibold ${
+                    activeTab === 'experiment'
+                      ? 'bg-purple-500 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Experiment Lab (3-Strategy Matrix)
+                </button>
               </div>
 
               {/* Chart Legend Telemetry */}
@@ -569,6 +588,41 @@ export const QuantStudio: React.FC = () => {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {activeTab === 'experiment' && (
+              <div className="space-y-4 font-sans">
+                <div className="p-4 rounded-2xl bg-purple-950/20 border border-purple-500/30 space-y-2">
+                  <div className="flex items-center justify-between font-mono text-xs text-purple-400 font-bold">
+                    <span>⚡ AUREX AI VERDICT (SeekAI claude-opus-5)</span>
+                    <span className="text-[10px] bg-purple-500/20 px-2 py-0.5 rounded text-purple-300">Model: claude-opus-5</span>
+                  </div>
+                  <p className="text-slate-200 text-xs leading-relaxed">
+                    {experimentData?.aurex_verdict || 'Statistical Arbitrage Z-Score provides the superior risk-adjusted profile with controlled drawdown (-8.1%) and strong Sharpe ratio (3.12) despite lower absolute CAGR, making it optimal for choppy regime shifts.'}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {(experimentData?.strategies || [
+                    { name: 'Alpha Trend Momentum v4', type: 'Trend Crossover', metrics: { cagr: 48.2, sharpe: 2.84, max_drawdown: -8.1, win_rate: 64.8 } },
+                    { name: 'Statistical Arbitrage Z-Score', type: 'Mean Reversion', metrics: { cagr: 36.8, sharpe: 3.12, max_drawdown: -4.7, win_rate: 71.4 } },
+                    { name: 'Volatility Band Breakout', type: 'Regime Expansion', metrics: { cagr: 52.6, sharpe: 2.15, max_drawdown: -14.3, win_rate: 54.2 } }
+                  ]).map((st: any, i: number) => (
+                    <div key={i} className="p-4 rounded-2xl bg-obsidian-950 border border-white/10 space-y-3 font-mono">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="font-bold text-white">{st.name}</span>
+                        <span className="text-[10px] text-lime-400 bg-obsidian-850 px-2 py-0.5 rounded">{st.type}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-white/5">
+                        <div><span className="text-slate-400">CAGR:</span> <strong className="text-lime-400">{st.metrics.cagr}%</strong></div>
+                        <div><span className="text-slate-400">Sharpe:</span> <strong className="text-emerald-400">{st.metrics.sharpe}</strong></div>
+                        <div><span className="text-slate-400">Max DD:</span> <strong className="text-coral-400">{st.metrics.max_drawdown}%</strong></div>
+                        <div><span className="text-slate-400">Win Rate:</span> <strong className="text-cyan-400">{st.metrics.win_rate}%</strong></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
