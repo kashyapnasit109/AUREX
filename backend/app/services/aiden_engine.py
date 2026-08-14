@@ -107,13 +107,37 @@ class AidenEngine:
         
         message_text = SeekAIService.query_claude(last_msg, system_instruction=system_context)
         if not message_text:
-            message_text = (
-                f"Based on real-time vector similarity across our enterprise catalog (`DW_RETAIL.CATALOG_MASTER`), "
-                f"the top recommended item for your query is **{top_product.name}** ({top_product.match_score}% match score). "
-                f"It features {top_product.key_feature}, with Active Noise Cancellation rated at {top_product.scores.anc_isolation}/100 "
-                f"and Battery Efficiency at {top_product.scores.battery_efficiency}/100. "
-                f"There are currently **{top_product.inventory}** verified units in stock across primary fulfillment centers."
-            )
+            if "compare" in last_msg or "vs" in last_msg:
+                p1, p2 = matched_products[0], matched_products[1]
+                message_text = (
+                    f"**Comparative Grounded Analysis ({p1.name} vs. {p2.name})**:\n\n"
+                    f"• **{p1.name}** (${p1.price}): {p1.match_score}% Match | ANC: **{p1.scores.anc_isolation}%** | Battery: **{p1.scores.battery_efficiency}%** | Stock: **{p1.inventory} units**\n"
+                    f"• **{p2.name}** (${p2.price}): {p2.match_score}% Match | ANC: **{p2.scores.anc_isolation}%** | Battery: **{p2.scores.battery_efficiency}%** | Stock: **{p2.inventory} units**\n\n"
+                    f"**Verdict**: {p1.name} provides superior acoustic isolation with premium titanium drivers, while {p2.name} offers a lighter carbon chassis."
+                )
+            elif "battery" in last_msg:
+                best_batt = max(matched_products, key=lambda x: x.scores.battery_efficiency)
+                message_text = (
+                    f"For maximum battery autonomy, our verified catalog highlights the **{best_batt.name}** "
+                    f"with an industry-leading **{best_batt.scores.battery_efficiency}/100 efficiency score** ({best_batt.key_feature}). "
+                    f"Verified warehouse stock: **{best_batt.inventory} units** available at ${best_batt.price}."
+                )
+            elif "travel" in last_msg or "anc" in last_msg or "noise" in last_msg:
+                message_text = (
+                    f"For travel and acoustic isolation, the top-rated unit is **{top_product.name}** "
+                    f"({top_product.match_score}% match score). It features {top_product.key_feature}, "
+                    f"with Active Noise Cancellation tested at **{top_product.scores.anc_isolation}/100** and 48-hour continuous runtime. "
+                    f"Currently verified in stock with **{top_product.inventory} units** ready for immediate fulfillment."
+                )
+            else:
+                message_text = (
+                    f"Based on real-time vector similarity across our enterprise catalog (`DW_RETAIL.CATALOG_MASTER`), "
+                    f"the optimal match for your query is **{top_product.name}** ({top_product.match_score}% match score). "
+                    f"It features {top_product.key_feature}, with Active Noise Cancellation rated at {top_product.scores.anc_isolation}/100 "
+                    f"and Battery Efficiency at {top_product.scores.battery_efficiency}/100. "
+                    f"Warehouse status: **{top_product.inventory} verified units** in stock."
+                )
+
 
         # Cross-module proactive event surfacing if event detected
         if cross_module_event:

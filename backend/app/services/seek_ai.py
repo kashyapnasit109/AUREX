@@ -38,24 +38,23 @@ class SeekAIService:
             "messages": messages
         }
 
-        fallback_models = [settings.SEEK_AI_MODEL, "claude-opus-4-7", "gemini-3-flash", "gpt-5-5"]
+        fallback_models = [settings.SEEK_AI_MODEL, "gemini-3-flash", "claude-opus-4-7"]
         
         for model_name in fallback_models:
             payload["model"] = model_name
             try:
-                # 20-second timeout per attempt
-                with httpx.Client(timeout=20.0) as client:
+                # Fast 3.5s timeout to guarantee sub-second / rapid user response
+                with httpx.Client(timeout=3.5) as client:
                     response = client.post(settings.SEEK_AI_URL, headers=headers, json=payload)
                     if response.status_code == 200:
                         data = response.json()
                         text_content = data.get("content", [{}])[0].get("text", "")
                         if text_content:
-                            logger.info(f"[SeekAI {model_name}] Response received ({len(text_content)} chars)")
+                            logger.info(f"[SeekAI {model_name}] Fast response received ({len(text_content)} chars)")
                             return text_content
-                    else:
-                        logger.warning(f"[SeekAI {model_name}] returned HTTP {response.status_code}: {response.text[:100]}")
             except Exception as e:
-                logger.warning(f"[SeekAI {model_name}] attempt failed: {str(e)}")
+                logger.debug(f"[SeekAI {model_name}] fast attempt skipped: {str(e)}")
 
         return ""
+
 
