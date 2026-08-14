@@ -18,9 +18,10 @@ import { PitchDeck } from './pages/PitchDeck';
 export default function App() {
   return (
     <Routes>
-      {/* Public Pages */}
-      <Route path="/" element={<Landing />} />
+      {/* Primary Gateway & Public Pages */}
+      <Route path="/" element={<Auth />} />
       <Route path="/login" element={<Auth />} />
+      <Route path="/landing" element={<Landing />} />
       <Route path="/security" element={<Security />} />
 
       {/* Authenticated Platform Workspace */}

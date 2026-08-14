@@ -27,14 +27,36 @@ interface SavedSession {
 }
 
 export const Aiden: React.FC = () => {
-  // 1-Hour Session Storage Loader
+  // Get active user from auth
+  const getActiveUser = () => {
+    try {
+      const saved = localStorage.getItem('AUREX_AUTH_USER');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  };
+
+  const activeUser = getActiveUser();
+  const sessionStorageKey = activeUser && !activeUser.isGuest
+    ? `AUREX_AIDEN_USER_${activeUser.email}`
+    : SESSION_KEY;
+
+  // Session Storage Loader
   const loadInitialMessages = () => {
     try {
-      const saved = localStorage.getItem(SESSION_KEY);
+      const saved = localStorage.getItem(sessionStorageKey);
       if (saved) {
         const parsed: SavedSession = JSON.parse(saved);
-        if (Date.now() - parsed.timestamp < SESSION_TTL_MS && Array.isArray(parsed.messages) && parsed.messages.length > 0) {
-          return parsed.messages;
+        if (activeUser && !activeUser.isGuest) {
+          // Logged in user: permanent history for this account
+          if (Array.isArray(parsed.messages) && parsed.messages.length > 0) {
+            return parsed.messages;
+          }
+        } else {
+          // Guest user: 1-hour TTL
+          if (Date.now() - parsed.timestamp < SESSION_TTL_MS && Array.isArray(parsed.messages) && parsed.messages.length > 0) {
+            return parsed.messages;
+          }
         }
       }
     } catch (e) {
@@ -55,18 +77,18 @@ export const Aiden: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showProductsMap, setShowProductsMap] = useState<Record<string, boolean>>({});
 
-  // Auto-save session with 1-hour TTL
+  // Auto-save session with user/guest isolation
   useEffect(() => {
     try {
       const sessionData: SavedSession = {
         timestamp: Date.now(),
         messages,
       };
-      localStorage.setItem(SESSION_KEY, JSON.stringify(sessionData));
+      localStorage.setItem(sessionStorageKey, JSON.stringify(sessionData));
     } catch (e) {
       console.warn('[Aiden] Session persistence error:', e);
     }
-  }, [messages]);
+  }, [messages, sessionStorageKey]);
 
   const toggleShowProducts = (msgId: string) => {
     setShowProductsMap((prev) => ({ ...prev, [msgId]: prev[msgId] === false ? true : !prev[msgId] }));
@@ -81,7 +103,7 @@ export const Aiden: React.FC = () => {
   }, [messages, isTyping]);
 
   const handleResetSession = () => {
-    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(sessionStorageKey);
     setMessages(mockAidenConversation);
   };
 
@@ -235,7 +257,11 @@ export const Aiden: React.FC = () => {
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[11px]">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <Clock className="w-3 h-3 ml-0.5" />
-              <span>1h Session Active</span>
+              <span>
+                {activeUser && !activeUser.isGuest
+                  ? `${activeUser.name} (${activeUser.role.split(' ')[0]})`
+                  : '1h Guest Session Active'}
+              </span>
             </div>
 
             <button
