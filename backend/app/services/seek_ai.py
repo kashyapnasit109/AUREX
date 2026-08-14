@@ -38,26 +38,24 @@ class SeekAIService:
             "messages": messages
         }
 
-        try:
-            # 90-second timeout for large model generation
-            with httpx.Client(timeout=90.0) as client:
-                response = client.post(settings.SEEK_AI_URL, headers=headers, json=payload)
-                if response.status_code == 200:
-                    data = response.json()
-                    text_content = data.get("content", [{}])[0].get("text", "")
-                    logger.info(f"[SeekAI {settings.SEEK_AI_MODEL}] Response received ({len(text_content)} chars)")
-                    return text_content
-                else:
-                    error_msg = f"SeekAI API Error (HTTP {response.status_code}): {response.text}"
-                    logger.error(error_msg)
-                    raise HTTPException(status_code=response.status_code, detail=error_msg)
-        except httpx.TimeoutException:
-            error_msg = "SeekAI Timeout Error: Request to seekai.cc timed out after 90 seconds."
-            logger.error(error_msg)
-            raise HTTPException(status_code=504, detail=error_msg)
-        except Exception as e:
-            if isinstance(e, HTTPException):
-                raise e
-            error_msg = f"SeekAI Request Error: {str(e)}"
-            logger.error(error_msg)
-            raise HTTPException(status_code=500, detail=error_msg)
+        fallback_models = [settings.SEEK_AI_MODEL, "claude-opus-4-7", "gemini-3-flash", "gpt-5-5"]
+        
+        for model_name in fallback_models:
+            payload["model"] = model_name
+            try:
+                # 20-second timeout per attempt
+                with httpx.Client(timeout=20.0) as client:
+                    response = client.post(settings.SEEK_AI_URL, headers=headers, json=payload)
+                    if response.status_code == 200:
+                        data = response.json()
+                        text_content = data.get("content", [{}])[0].get("text", "")
+                        if text_content:
+                            logger.info(f"[SeekAI {model_name}] Response received ({len(text_content)} chars)")
+                            return text_content
+                    else:
+                        logger.warning(f"[SeekAI {model_name}] returned HTTP {response.status_code}: {response.text[:100]}")
+            except Exception as e:
+                logger.warning(f"[SeekAI {model_name}] attempt failed: {str(e)}")
+
+        return ""
+

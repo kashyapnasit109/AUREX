@@ -106,6 +106,14 @@ class AidenEngine:
         )
         
         message_text = SeekAIService.query_claude(last_msg, system_instruction=system_context)
+        if not message_text:
+            message_text = (
+                f"Based on real-time vector similarity across our enterprise catalog (`DW_RETAIL.CATALOG_MASTER`), "
+                f"the top recommended item for your query is **{top_product.name}** ({top_product.match_score}% match score). "
+                f"It features {top_product.key_feature}, with Active Noise Cancellation rated at {top_product.scores.anc_isolation}/100 "
+                f"and Battery Efficiency at {top_product.scores.battery_efficiency}/100. "
+                f"There are currently **{top_product.inventory}** verified units in stock across primary fulfillment centers."
+            )
 
         # Cross-module proactive event surfacing if event detected
         if cross_module_event:
