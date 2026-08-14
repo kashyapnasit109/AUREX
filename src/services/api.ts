@@ -28,6 +28,60 @@ export interface AidenChatMessage {
 
 export class AurexAPI {
   /**
+   * Enroll Operator / Dispatch 2FA Challenge Email
+   */
+  static async enrollOrChallenge(params: { email: string; name?: string; role?: string; custom_password?: string }) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/enroll`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) throw new Error('Enrollment challenge failed');
+      return await res.json();
+    } catch (err) {
+      console.warn('[AUREX API] Auth challenge fallback:', err);
+      return null;
+    }
+  }
+
+  /**
+   * Verify 2FA OTP Code
+   */
+  static async verifyOtp(params: { email: string; otp: string; access_key?: string }) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) throw new Error('OTP verification failed');
+      return await res.json();
+    } catch (err) {
+      console.warn('[AUREX API] OTP verification fallback:', err);
+      return null;
+    }
+  }
+
+  /**
+   * Request Cryptographic Recovery Token
+   */
+  static async requestRecovery(email: string) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/recovery`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) throw new Error('Recovery request failed');
+      return await res.json();
+    } catch (err) {
+      console.warn('[AUREX API] Recovery token fallback:', err);
+      return null;
+    }
+  }
+
+  /**
    * Health Check
    */
   static async checkHealth() {

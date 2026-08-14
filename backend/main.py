@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import health, quant, datamart, aiden, websocket
+from app.routers import health, quant, datamart, aiden, websocket, auth
 from app.services.datamart_engine import DataMartEngine
 
 app = FastAPI(
@@ -28,6 +28,7 @@ def startup_event():
 
 # Include Routers under API v1 prefix
 app.include_router(health.router, prefix=settings.API_V1_STR)
+app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(quant.router, prefix=settings.API_V1_STR)
 app.include_router(datamart.router, prefix=settings.API_V1_STR)
 app.include_router(aiden.router, prefix=settings.API_V1_STR)
