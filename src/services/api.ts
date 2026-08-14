@@ -3,8 +3,9 @@
  * Connects React UI components to the FastAPI Backend Core at http://localhost:8000/api/v1
  */
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
-const WS_URL = 'ws://localhost:8000/ws/telemetry';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:8000/api/v1';
+const WS_URL = (import.meta.env.VITE_WS_URL as string | undefined) || 'ws://localhost:8000/ws/telemetry';
+
 
 export interface BacktestParams {
   strategy_id: string;
