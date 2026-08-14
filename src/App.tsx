@@ -1,0 +1,32 @@
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Landing } from './pages/Landing';
+import { Auth } from './pages/Auth';
+import { Security } from './pages/Security';
+import { AppShell } from './components/layout/AppShell';
+import { Overview } from './pages/Overview';
+import { QuantStudio } from './pages/QuantStudio';
+import { DataMart } from './pages/DataMart';
+import { Aiden } from './pages/Aiden';
+
+export default function App() {
+  return (
+    <Routes>
+      {/* Public Pages */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Auth />} />
+      <Route path="/security" element={<Security />} />
+
+      {/* Authenticated Platform Workspace */}
+      <Route path="/app" element={<AppShell />}>
+        <Route index element={<Navigate to="/app/overview" replace />} />
+        <Route path="overview" element={<Overview />} />
+        <Route path="quant" element={<QuantStudio />} />
+        <Route path="datamart" element={<DataMart />} />
+        <Route path="aiden" element={<Aiden />} />
+      </Route>
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}

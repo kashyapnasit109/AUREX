@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="aurexAscentGrad" x1="18" y1="86" x2="50" y2="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="35%" stop-color="#38EDFF"/>
+      <stop offset="70%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#D4F938"/>
+    </linearGradient>
+    <linearGradient id="aurexDescentGrad" x1="50" y1="12" x2="82" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D4F938"/>
+      <stop offset="30%" stop-color="#059669"/>
+      <stop offset="75%" stop-color="#024D3E"/>
+      <stop offset="100%" stop-color="#012720"/>
+    </linearGradient>
+    <linearGradient id="aurexHorizonGrad" x1="28" y1="62" x2="72" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="50%" stop-color="#D4F938"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+    <linearGradient id="aurexCoreGrad" x1="50" y1="32" x2="50" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="40%" stop-color="#D4F938" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#00E5FF" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="aurexVertexSheen" x1="50" y1="12" x2="50" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <polygon points="50,6 90,28 90,72 50,94 10,72 10,28" fill="#080A0E" stroke="rgba(255, 255, 255, 0.1)" stroke-width="1.5"/>
+  <polygon points="50,14 82,32 82,68 50,86 18,68 18,32" fill="#0C0F17"/>
+  <path d="M50 14L18 80H34L50 46L66 80H82L50 14Z" fill="url(#aurexAscentGrad)"/>
+  <path d="M50 14L82 80H66L50 46V14Z" fill="url(#aurexDescentGrad)"/>
+  <polygon points="28,58 72,58 64,66 36,66" fill="url(#aurexHorizonGrad)"/>
+  <polygon points="50,32 58,52 42,52" fill="url(#aurexCoreGrad)"/>
+  <line x1="50" y1="14" x2="50" y2="46" stroke="url(#aurexVertexSheen)" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="50" cy="14" r="2.5" fill="#FFFFFF"/>
+  <circle cx="18" cy="80" r="2" fill="#00E5FF"/>
+  <circle cx="82" cy="80" r="2" fill="#10B981"/>
+  <circle cx="50" cy="62" r="1.8" fill="#D4F938"/>
+</svg>
