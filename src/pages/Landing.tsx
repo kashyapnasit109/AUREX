@@ -39,7 +39,7 @@ export const Landing: React.FC = () => {
               AUREX System Online
             </span>
             <span className="hidden sm:inline text-slate-600">•</span>
-            <span className="hidden sm:inline text-slate-300">PS-05 Enterprise Cognitive Platform</span>
+            <span className="hidden sm:inline text-slate-300 font-sans">Autonomous Enterprise Cognitive Architecture</span>
           </div>
 
           <div className="flex items-center gap-6 text-xs">

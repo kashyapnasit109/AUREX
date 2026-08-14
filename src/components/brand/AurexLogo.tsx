@@ -9,67 +9,108 @@ interface AurexLogoProps {
 
 export const AurexLogo: React.FC<AurexLogoProps> = ({
   className = '',
-  size = 32,
+  size = 36,
   withText = false,
   textClassName = '',
 }) => {
   return (
     <div className={`inline-flex items-center gap-3 select-none group cursor-pointer ${className}`}>
       {/* 
-        AUREX Architectural Monogram:
-        A bespoke, precision-crafted isometric ribbon forming the continuous 'A' prism.
-        Clean, authoritative, minimal — free of stock clipart or AI cliches.
+        AUREX Bespoke Tri-Prism Quantum Glyph:
+        An interlocking architectural isometric monolith formed by three converging kinetic vectors,
+        featuring internal refractive gradients, specular highlights, and an illuminated quantum core.
       */}
       <svg
         width={size}
         height={size}
-        viewBox="0 0 40 40"
+        viewBox="0 0 64 64"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="shrink-0 transition-transform duration-300 group-hover:scale-105"
+        className="shrink-0 transition-transform duration-300 group-hover:scale-105 filter drop-shadow-[0_0_14px_rgba(212,249,56,0.35)]"
       >
         <defs>
-          {/* Main Primary Ascent: Electric Lime */}
-          <linearGradient id="aurexPrimaryGrad" x1="8" y1="36" x2="20" y2="4" gradientUnits="userSpaceOnUse">
+          {/* Primary Ascent Ribbon: Electric Hyper-Lime to Mint */}
+          <linearGradient id="aurexAscent" x1="12" y1="56" x2="32" y2="8" gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor="#00E5FF" />
-            <stop offset="50%" stopColor="#84CC16" />
+            <stop offset="45%" stopColor="#10B981" />
             <stop offset="100%" stopColor="#D4F938" />
           </linearGradient>
 
-          {/* Secondary Facet: Deep Obsidian Slate */}
-          <linearGradient id="aurexFacetGrad" x1="20" y1="4" x2="32" y2="36" gradientUnits="userSpaceOnUse">
+          {/* Deep Obsidian-Faceted Right Wing */}
+          <linearGradient id="aurexDescent" x1="32" y1="8" x2="52" y2="56" gradientUnits="userSpaceOnUse">
             <stop offset="0%" stopColor="#D4F938" />
-            <stop offset="40%" stopColor="#10B981" />
-            <stop offset="100%" stopColor="#064E3B" />
+            <stop offset="40%" stopColor="#059669" />
+            <stop offset="100%" stopColor="#042F2E" />
           </linearGradient>
 
-          {/* Precision Cross-Bridge: Arctic Cyan Horizon */}
-          <linearGradient id="aurexBridgeGrad" x1="12" y1="25" x2="28" y2="25" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="#00E5FF" />
-            <stop offset="100%" stopColor="#D4F938" />
+          {/* Floating Quantum Core Beam */}
+          <linearGradient id="aurexQuantumBeam" x1="18" y1="40" x2="46" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#00E5FF" stopOpacity="0.9" />
+            <stop offset="50%" stopColor="#D4F938" />
+            <stop offset="100%" stopColor="#10B981" stopOpacity="0.9" />
+          </linearGradient>
+
+          {/* Inner Light Refraction Prism */}
+          <linearGradient id="aurexInnerGlow" x1="32" y1="20" x2="32" y2="42" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#D4F938" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#00E5FF" stopOpacity="0.1" />
+          </linearGradient>
+
+          {/* Specular Edge Highlight */}
+          <linearGradient id="specularGlint" x1="32" y1="8" x2="32" y2="28" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        {/* Left Ascent Beam */}
-        <path
-          d="M20 4L7 34H14L20 18L26 34H33L20 4Z"
-          fill="url(#aurexPrimaryGrad)"
+        {/* Ambient Darkened Geometric Shield */}
+        <polygon
+          points="32,4 58,18 58,46 32,60 6,46 6,18"
+          fill="#080A0E"
+          stroke="rgba(255, 255, 255, 0.08)"
+          strokeWidth="1.2"
         />
 
-        {/* Right Architectural Facet with Specular Edge */}
+        {/* Left Kinetic Ascent Blade */}
         <path
-          d="M20 4L33 34H26L20 18V4Z"
-          fill="url(#aurexFacetGrad)"
+          d="M32 10L12 50H23L32 30L41 50H52L32 10Z"
+          fill="url(#aurexAscent)"
         />
 
-        {/* Floating Internal Horizon Crossbar */}
+        {/* Right Faceted Volumetric Wing */}
         <path
-          d="M12 25H28V28.5H12V25Z"
-          fill="url(#aurexBridgeGrad)"
+          d="M32 10L52 50H41L32 30V10Z"
+          fill="url(#aurexDescent)"
         />
 
-        {/* Apex Telemetry Coordinate */}
-        <circle cx="20" cy="4" r="1.5" fill="#FFFFFF" />
+        {/* Floating Refractive Quantum Horizon Crossbeam */}
+        <polygon
+          points="20,38 44,38 39,44 25,44"
+          fill="url(#aurexQuantumBeam)"
+        />
+
+        {/* Central Quantum Singularity Core */}
+        <polygon
+          points="32,22 38,36 26,36"
+          fill="url(#aurexInnerGlow)"
+        />
+
+        {/* Specular Vertex Edge Line */}
+        <line
+          x1="32"
+          y1="10"
+          x2="32"
+          y2="30"
+          stroke="url(#specularGlint)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+
+        {/* Precision Coordinate Nodes */}
+        <circle cx="32" cy="10" r="2" fill="#FFFFFF" />
+        <circle cx="12" cy="50" r="1.8" fill="#00E5FF" />
+        <circle cx="52" cy="50" r="1.8" fill="#10B981" />
+        <circle cx="32" cy="41" r="1.5" fill="#D4F938" />
       </svg>
 
       {/* Corporate Typography Wordmark */}
@@ -80,7 +121,7 @@ export const AurexLogo: React.FC<AurexLogoProps> = ({
               AUREX
             </span>
           </div>
-          <span className="font-sans text-[9px] uppercase tracking-[0.2em] text-slate-400 font-semibold mt-0.5">
+          <span className="font-sans text-[9px] uppercase tracking-[0.25em] text-slate-400 font-semibold mt-0.5">
             Intelligence
           </span>
         </div>
