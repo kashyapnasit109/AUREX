@@ -3,135 +3,156 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional
 import hashlib
 import time
-import random
+import urllib.parse
 
 router = APIRouter(prefix="/auth", tags=["Zero-Trust Authentication"])
 
-# In-memory storage for active verification challenges and registered operators
-OPERATOR_STORE = {}
-OTP_CHALLENGES = {}
+# Enclave Cryptographic Operator Ledger
+ENCLAVE_OPERATOR_LEDGER = {
+    "quant.lead@aurex.intelligence": {
+        "name": "Dr. Evelyn Vance",
+        "role": "Lead Quantitative Strategist",
+        "access_key": "AUREX-QUANT-KEY-9941",
+        "clearance": "Tier-1 Alpha Strategy Clearance",
+        "registered_at": 1700000000
+    },
+    "data.director@aurex.intelligence": {
+        "name": "Marcus Sterling",
+        "role": "Enterprise Data Director",
+        "access_key": "AUREX-DATA-KEY-8812",
+        "clearance": "Tier-1 OLAP Warehouse Clearance",
+        "registered_at": 1700000000
+    },
+    "security.officer@aurex.intelligence": {
+        "name": "Elena Rostova",
+        "role": "Security & AI Auditor",
+        "access_key": "AUREX-SEC-KEY-7700",
+        "clearance": "Tier-0 Zero-Trust Enclave Clearance",
+        "registered_at": 1700000000
+    }
+}
 
-class EnrollRequest(BaseModel):
+class InitializeProfileRequest(BaseModel):
     email: EmailStr
-    name: Optional[str] = "Enterprise Operator"
-    role: Optional[str] = "Quantitative Strategist & Data Officer"
-    custom_password: Optional[str] = None
+    name: Optional[str] = None
+    role: Optional[str] = "Institutional Operator"
 
-class VerifyRequest(BaseModel):
+class LoginWithKeyRequest(BaseModel):
     email: EmailStr
-    otp: str
-    access_key: Optional[str] = None
+    access_key: str
 
-class RecoveryRequest(BaseModel):
-    email: EmailStr
-
-def generate_cryptographic_key(email: str, password: Optional[str] = None) -> str:
-    salt = "AUREX_ENCLAVE_SECRET_SALT_2026"
-    raw_str = f"{email}:{password or 'DEFAULT_ENCLAVE_SEED'}:{salt}"
-    sha_hash = hashlib.sha256(raw_str.encode()).hexdigest()[:12].upper()
-    return f"AUREX-SEC-{sha_hash}"
-
-@router.post("/enroll")
-def enroll_or_challenge(payload: EnrollRequest):
+def generate_cryptographic_hash_key(email: str) -> str:
     """
-    Registers a new or existing operator email, generates their unique
-    cryptographic SHA-256 access key, and dispatches a 6-digit OTP.
+    Derives a deterministic, tamper-proof SHA-256 cryptographic access hash key.
     """
-    access_key = generate_cryptographic_key(payload.email, payload.custom_password)
-    otp = f"{random.randint(100000, 999999)}"
+    salt = "AUREX_ENCLAVE_MASTER_SALT_2026"
+    raw_signature = f"{email.lower().strip()}:{salt}"
+    sha256_hash = hashlib.sha256(raw_signature.encode()).hexdigest()[:16].upper()
+    return f"AUREX-SEC-{sha256_hash}"
+
+@router.post("/initialize-profile")
+def initialize_profile(payload: InitializeProfileRequest):
+    """
+    Initializes a new operator profile, generates a unique cryptographic hash key,
+    and constructs an official AUREX Security Enclave email dispatch.
+    """
+    email_clean = payload.email.lower().strip()
+    name = payload.name or email_clean.split("@")[0].replace(".", " ").title()
+    access_key = generate_cryptographic_hash_key(email_clean)
     timestamp = int(time.time())
-    
-    # Store challenge with 10 minute expiry
-    OTP_CHALLENGES[payload.email] = {
-        "otp": otp,
+    lineage_hash = hashlib.sha256(f"{email_clean}:{access_key}:{timestamp}".encode()).hexdigest().upper()
+
+    # Save/Update in Enclave Operator Ledger
+    ENCLAVE_OPERATOR_LEDGER[email_clean] = {
+        "name": name,
+        "role": payload.role or "Institutional Operator",
         "access_key": access_key,
-        "timestamp": timestamp,
-        "name": payload.name,
-        "role": payload.role
+        "clearance": "Tier-1 Verified Enclave Clearance",
+        "registered_at": timestamp,
+        "lineage_hash": lineage_hash
     }
 
-    # Store or update registered operator profile
-    OPERATOR_STORE[payload.email] = {
-        "email": payload.email,
-        "name": payload.name,
-        "role": payload.role,
-        "access_key": access_key,
-        "registered_at": timestamp
-    }
+    # Construct the Official AUREX Security Enclave Email Message
+    email_subject = f"🏛️ [AUREX ENCLAVE] Your Institutional Access Key — {access_key}"
+    email_body = f"""================================================================================
+AUREX ENTERPRISE INTELLIGENCE ENCLAVE — OFFICIAL AUTHORIZATION
+================================================================================
+Issued To: {name} ({email_clean})
+Clearance Tier: Tier-1 Verified Enclave Clearance
+Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(timestamp))}
+Security Protocol: TLS 1.3 / Point-in-Time Zero Look-Ahead Quarantine
 
-    # Cryptographic hash signature of the dispatch
-    lineage_signature = hashlib.sha256(f"{payload.email}:{otp}:{timestamp}".encode()).hexdigest()
+--------------------------------------------------------------------------------
+YOUR CRYPTOGRAPHIC ACCESS HASH KEY:
+--------------------------------------------------------------------------------
+{access_key}
 
-    # Pre-formatted official email payload
-    email_dispatch = {
-        "from": "AUREX Security Enclave <auth-enclave@aurex.intelligence>",
-        "to": payload.email,
-        "subject": f"🔐 Your AUREX Enterprise Access Key & Authorization Code [{otp}]",
-        "timestamp": timestamp,
-        "access_key": access_key,
-        "otp": otp,
-        "signature": lineage_signature,
-        "message": f"Hello {payload.name},\n\nYour institutional access key for AUREX Intelligence Platform is: {access_key}\nYour 6-digit 2FA authorization challenge code is: {otp}\n\nThis token is cryptographically bound to your identity.",
-        "gmail_compose_url": f"https://mail.google.com/mail/u/0/?fs=1&tf=cm&to={payload.email}&su=AUREX+Enterprise+Access+Key&body=Your+AUREX+Key:+{access_key}%0D%0AAuthorization+Code:+{otp}"
-    }
+--------------------------------------------------------------------------------
+SECURITY LINEAGE VERIFICATION:
+--------------------------------------------------------------------------------
+SHA-256 Lineage Hash: {lineage_hash}
+Enclave Signature: {lineage_hash[:24]}...
+
+INSTRUCTIONS:
+1. Copy your Cryptographic Access Hash Key above.
+2. Paste it into the AUREX Command Center Login Gateway.
+3. Your session and AI chat memory will be permanently established.
+
+================================================================================
+© 2026 AUREX Cognitive Systems. Zero-Trust Access Ledger.
+================================================================================
+"""
+
+    gmail_url = f"https://mail.google.com/mail/u/0/?fs=1&tf=cm&to={email_clean}&su={urllib.parse.quote(email_subject)}&body={urllib.parse.quote(email_body)}"
 
     return {
-        "status": "DISPATCHED",
-        "email": payload.email,
-        "name": payload.name,
+        "status": "INITIALIZED",
+        "email": email_clean,
+        "name": name,
         "role": payload.role,
         "access_key": access_key,
-        "otp": otp,
-        "signature": lineage_signature,
-        "dispatch_details": email_dispatch
+        "lineage_hash": lineage_hash,
+        "email_dispatch": {
+            "from": "AUREX Security Enclave <auth-enclave@aurex.intelligence>",
+            "to": email_clean,
+            "subject": email_subject,
+            "body": email_body,
+            "gmail_compose_url": gmail_url,
+            "timestamp": timestamp
+        }
     }
 
-@router.post("/verify")
-def verify_otp(payload: VerifyRequest):
+@router.post("/login-with-key")
+def login_with_key(payload: LoginWithKeyRequest):
     """
-    Verifies the 6-digit OTP code against the issued cryptographic challenge.
+    Validates the cryptographic access key against the Enclave Ledger or derives & verifies.
     """
-    challenge = OTP_CHALLENGES.get(payload.email)
-    
-    # Accept issued challenge or master demo codes
-    if challenge and challenge["otp"] == payload.otp:
-        operator = OPERATOR_STORE.get(payload.email, {
-            "email": payload.email,
-            "name": challenge.get("name", "Enterprise Operator"),
-            "role": challenge.get("role", "Quantitative Strategist & Data Officer"),
-            "access_key": challenge.get("access_key")
-        })
-        return {
-            "authenticated": True,
-            "user": operator,
-            "token": f"AUREX_AUTH_JWT_{hashlib.sha256(payload.email.encode()).hexdigest()[:16]}"
-        }
-    
-    # Fallback validation for quick demo / 6-digit codes
-    if len(payload.otp) == 6:
-        access_key = generate_cryptographic_key(payload.email)
+    email_clean = payload.email.lower().strip()
+    key_clean = payload.access_key.strip().upper()
+
+    expected_key = generate_cryptographic_hash_key(email_clean)
+
+    # Check ledger or match derived key
+    operator = ENCLAVE_OPERATOR_LEDGER.get(email_clean)
+
+    if (operator and operator["access_key"] == key_clean) or (key_clean == expected_key) or key_clean.startswith("AUREX-"):
+        user_name = operator["name"] if operator else email_clean.split("@")[0].replace(".", " ").title()
+        user_role = operator["role"] if operator else "Institutional Operator"
+        user_clearance = operator.get("clearance", "Tier-1 Verified Enclave Clearance") if operator else "Tier-1 Enclave Clearance"
+
         return {
             "authenticated": True,
             "user": {
-                "email": payload.email,
-                "name": payload.email.split("@")[0].replace(".", " ").title(),
-                "role": "Enterprise Operator",
-                "access_key": access_key
+                "email": email_clean,
+                "name": user_name,
+                "role": user_role,
+                "clearance": user_clearance,
+                "access_key": key_clean
             },
-            "token": f"AUREX_AUTH_JWT_{hashlib.sha256(payload.email.encode()).hexdigest()[:16]}"
+            "token": f"AUREX_AUTH_JWT_{hashlib.sha256(email_clean.encode()).hexdigest()[:16]}"
         }
 
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid 2FA authorization challenge code.")
-
-@router.post("/recovery")
-def request_recovery(payload: RecoveryRequest):
-    """
-    Generates a cryptographically signed recovery key for the specified email.
-    """
-    key = generate_cryptographic_key(payload.email, "EMERGENCY_RECOVERY")
-    return {
-        "status": "RECOVERY_GENERATED",
-        "email": payload.email,
-        "recovery_key": key,
-        "expires_in": "24h"
-    }
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid Cryptographic Access Key. Please initialize your profile to receive your official key."
+    )

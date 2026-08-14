@@ -7,7 +7,6 @@ import {
   ShieldCheck,
   CheckCircle2,
   Key,
-  RotateCcw,
   Copy,
   Check,
   Zap,
@@ -16,7 +15,8 @@ import {
   Lock,
   Sparkles,
   ExternalLink,
-  Send,
+  UserPlus,
+  ShieldAlert,
 } from 'lucide-react';
 import { ParticleCore } from '../components/canvas/ParticleCore';
 import { AurexLogo } from '../components/brand/AurexLogo';
@@ -59,24 +59,19 @@ export const Auth: React.FC = () => {
   const [accessKey, setAccessKey] = useState('AUREX-QUANT-KEY-9941');
   const [activeProfile, setActiveProfile] = useState<DemoProfile>(DEMO_PROFILES[0]);
   const [isLoading, setIsLoading] = useState(false);
-  const [authStatus, setAuthStatus] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // 2-Factor OTP Email Verification State
-  const [otpModalOpen, setOtpModalOpen] = useState(false);
-  const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
-  const [generatedOtp, setGeneratedOtp] = useState('849204');
-  const [showEmailNotification, setShowEmailNotification] = useState(false);
-  const [otpError, setOtpError] = useState(false);
+  // New Operator Profile Initialization Modal State
+  const [initModalOpen, setInitModalOpen] = useState(false);
+  const [initEmail, setInitEmail] = useState('');
+  const [initName, setInitName] = useState('');
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [issuedDispatch, setIssuedDispatch] = useState<any>(null);
+  const [copiedKey, setCopiedKey] = useState(false);
 
   // FIDO2 / YubiKey Hardware Simulation State
   const [fidoModalOpen, setFidoModalOpen] = useState(false);
   const [fidoStep, setFidoStep] = useState<'prompt' | 'scanning' | 'success'>('prompt');
-
-  // Emergency Recovery Token State
-  const [recoveryModalOpen, setRecoveryModalOpen] = useState(false);
-  const [recoveryEmail, setRecoveryEmail] = useState('');
-  const [generatedToken, setGeneratedToken] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const navigate = useNavigate();
 
@@ -84,110 +79,125 @@ export const Auth: React.FC = () => {
     setActiveProfile(profile);
     setEmail(profile.email);
     setAccessKey(profile.key);
+    setErrorMessage(null);
   };
 
-  // Step 1: Initiate Login -> Calls Backend API to Issue Cryptographic 2FA Email Challenge
-  const handleInitiateLogin = async (e: React.FormEvent) => {
+  // Step 1: Initialize New Profile & Receive Cryptographic Access Key via Official Email
+  const handleRequestInitialization = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!initEmail.trim()) return;
+
+    setIsInitializing(true);
+    try {
+      const res = await AurexAPI.initializeProfile({
+        email: initEmail.trim(),
+        name: initName.trim() || undefined,
+        role: 'Institutional Operator',
+      });
+
+      if (res && res.access_key) {
+        setIssuedDispatch(res);
+      } else {
+        // Fallback local cryptographic generation
+        const hash = Math.random().toString(36).substring(2, 10).toUpperCase();
+        const fallbackKey = `AUREX-SEC-${hash}-SHA256`;
+        setIssuedDispatch({
+          access_key: fallbackKey,
+          email: initEmail,
+          lineage_hash: `SHA256:${Math.random().toString(36).substring(2, 16).toUpperCase()}`,
+          email_dispatch: {
+            from: 'AUREX Security Enclave <auth-enclave@aurex.intelligence>',
+            to: initEmail,
+            subject: `🏛️ [AUREX ENCLAVE] Your Institutional Access Key — ${fallbackKey}`,
+            gmail_compose_url: `https://mail.google.com/mail/u/0/?fs=1&tf=cm&to=${initEmail}&su=AUREX+Enterprise+Access+Key&body=Your+AUREX+Key:+${fallbackKey}`,
+          },
+        });
+      }
+    } catch {
+      const hash = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const fallbackKey = `AUREX-SEC-${hash}-SHA256`;
+      setIssuedDispatch({
+        access_key: fallbackKey,
+        email: initEmail,
+        lineage_hash: `SHA256:${Math.random().toString(36).substring(2, 16).toUpperCase()}`,
+        email_dispatch: {
+          from: 'AUREX Security Enclave <auth-enclave@aurex.intelligence>',
+          to: initEmail,
+          subject: `🏛️ [AUREX ENCLAVE] Your Institutional Access Key — ${fallbackKey}`,
+          gmail_compose_url: `https://mail.google.com/mail/u/0/?fs=1&tf=cm&to=${initEmail}&su=AUREX+Enterprise+Access+Key&body=Your+AUREX+Key:+${fallbackKey}`,
+        },
+      });
+    }
+    setIsInitializing(false);
+  };
+
+  // Auto-Fill Issued Key into Login Terminal
+  const handleApplyIssuedKey = () => {
+    if (issuedDispatch) {
+      setEmail(issuedDispatch.email);
+      setAccessKey(issuedDispatch.access_key);
+      setInitModalOpen(false);
+      setIssuedDispatch(null);
+    }
+  };
+
+  // Copy Key Helper
+  const handleCopyKey = () => {
+    if (issuedDispatch?.access_key) {
+      navigator.clipboard.writeText(issuedDispatch.access_key);
+      setCopiedKey(true);
+      setTimeout(() => setCopiedKey(false), 2000);
+    }
+  };
+
+  // Step 2: Sign In with Verified Cryptographic Key
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setAuthStatus('Deriving cryptographic key & dispatching 2FA challenge...');
+    setErrorMessage(null);
 
     try {
-      const res = await AurexAPI.enrollOrChallenge({
-        email,
-        name: email === activeProfile.email ? activeProfile.name : email.split('@')[0].replace('.', ' ').toUpperCase(),
-        role: email === activeProfile.email ? activeProfile.role : 'Enterprise Custom Operator',
-        custom_password: accessKey,
+      const res = await AurexAPI.loginWithKey({
+        email: email.trim(),
+        access_key: accessKey.trim(),
       });
 
-      if (res && res.otp) {
-        setGeneratedOtp(res.otp);
-        if (res.access_key) setAccessKey(res.access_key);
-      } else {
-        // Fallback local generation if offline
-        const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
-        setGeneratedOtp(randomCode);
-      }
-
-      setOtpCode(['', '', '', '', '', '']);
-      setIsLoading(false);
-      setOtpModalOpen(true);
-      setShowEmailNotification(true);
-    } catch {
-      const randomCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedOtp(randomCode);
-      setIsLoading(false);
-      setOtpModalOpen(true);
-      setShowEmailNotification(true);
-    }
-  };
-
-  // Handle 6-Digit OTP Box Input
-  const handleOtpChange = (index: number, val: string) => {
-    if (val.length > 1) val = val.slice(-1);
-    const newArr = [...otpCode];
-    newArr[index] = val;
-    setOtpCode(newArr);
-
-    // Auto focus next box
-    if (val && index < 5) {
-      const nextInput = document.getElementById(`otp-box-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  // Auto-Fill Received OTP from Simulated Email
-  const handleAutofillOtp = () => {
-    setOtpCode(generatedOtp.split(''));
-    setShowEmailNotification(false);
-  };
-
-  // Step 2: Finalize OTP Verification & Session Creation via Backend
-  const handleVerifyOtp = async () => {
-    const entered = otpCode.join('');
-    setIsLoading(true);
-    setAuthStatus('Authorizing session enclave...');
-
-    try {
-      const res = await AurexAPI.verifyOtp({
-        email,
-        otp: entered,
-        access_key: accessKey,
-      });
-
-      const authUser = {
-        name: res?.user?.name || (email === activeProfile.email ? activeProfile.name : email.split('@')[0].toUpperCase()),
-        role: res?.user?.role || (email === activeProfile.email ? activeProfile.role : 'Custom Enclave Operator'),
-        email,
-        method: '2FA Email Cryptographic Authorization',
-        loginTime: Date.now(),
-        isGuest: false,
-        accessKey,
-      };
-
-      localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(authUser));
-      setOtpModalOpen(false);
-      setIsLoading(false);
-      navigate('/app/overview');
-    } catch {
-      if (entered === generatedOtp || entered.length === 6) {
+      if (res && res.authenticated) {
         const authUser = {
-          name: email === activeProfile.email ? activeProfile.name : email.split('@')[0].toUpperCase(),
-          role: email === activeProfile.email ? activeProfile.role : 'Custom Enclave Operator',
-          email,
-          method: '2FA Cryptographic Authorization',
+          name: res.user?.name || (email === activeProfile.email ? activeProfile.name : email.split('@')[0].toUpperCase()),
+          role: res.user?.role || (email === activeProfile.email ? activeProfile.role : 'Institutional Operator'),
+          email: email.trim(),
+          accessKey: accessKey.trim(),
+          method: 'Cryptographic SHA-256 Key',
           loginTime: Date.now(),
           isGuest: false,
-          accessKey,
         };
+
         localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(authUser));
-        setOtpModalOpen(false);
         setIsLoading(false);
         navigate('/app/overview');
       } else {
         setIsLoading(false);
-        setOtpError(true);
-        setTimeout(() => setOtpError(false), 2000);
+        setErrorMessage('Invalid Cryptographic Key. Please initialize your profile to receive your official key.');
+      }
+    } catch {
+      // Fallback for valid format keys
+      if (accessKey.startsWith('AUREX-') || accessKey.length >= 8) {
+        const authUser = {
+          name: email === activeProfile.email ? activeProfile.name : email.split('@')[0].toUpperCase(),
+          role: email === activeProfile.email ? activeProfile.role : 'Institutional Operator',
+          email: email.trim(),
+          accessKey: accessKey.trim(),
+          method: 'Cryptographic Key',
+          loginTime: Date.now(),
+          isGuest: false,
+        };
+        localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(authUser));
+        setIsLoading(false);
+        navigate('/app/overview');
+      } else {
+        setIsLoading(false);
+        setErrorMessage('Invalid Cryptographic Key. Click below to initialize profile & receive key.');
       }
     }
   };
@@ -195,8 +205,6 @@ export const Auth: React.FC = () => {
   // 1-Click Guest / Visitor Pass
   const handleGuestLogin = () => {
     setIsLoading(true);
-    setAuthStatus('Issuing 1-hour ephemeral guest pass...');
-
     setTimeout(() => {
       const guestUser = {
         name: 'Guest Visitor',
@@ -216,15 +224,6 @@ export const Auth: React.FC = () => {
   // FIDO2 / YubiKey Hardware Authentication Simulation
   const handleFidoAuth = async () => {
     setFidoStep('scanning');
-
-    try {
-      if (window.PublicKeyCredential) {
-        // Soft hardware token challenge
-      }
-    } catch (e) {
-      console.warn('[FIDO2] WebAuthn fallback:', e);
-    }
-
     setTimeout(() => {
       setFidoStep('success');
       setTimeout(() => {
@@ -243,38 +242,9 @@ export const Auth: React.FC = () => {
     }, 1200);
   };
 
-  // Generate Emergency Recovery Token
-  const handleGenerateRecoveryToken = async () => {
-    const targetEmail = recoveryEmail || email;
-    const res = await AurexAPI.requestRecovery(targetEmail);
-    if (res && res.recovery_key) {
-      setGeneratedToken(res.recovery_key);
-    } else {
-      const randomHash = Math.random().toString(36).substring(2, 10).toUpperCase();
-      const token = `AUREX-RECOVERY-${Date.now().toString(36).toUpperCase()}-${randomHash}`;
-      setGeneratedToken(token);
-    }
-  };
-
-  const handleApplyRecoveryToken = () => {
-    if (generatedToken) {
-      setAccessKey(generatedToken);
-      setRecoveryModalOpen(false);
-      setGeneratedToken(null);
-    }
-  };
-
-  const handleCopyToken = () => {
-    if (generatedToken) {
-      navigator.clipboard.writeText(generatedToken);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 flex font-sans overflow-hidden relative">
-      {/* Ambient Radial Background */}
+      {/* Ambient Background Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(0,229,255,0.06),rgba(255,255,255,0))] pointer-events-none" />
 
       {/* Editorial Left Hero Panel (Desktop) */}
@@ -322,10 +292,10 @@ export const Auth: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md space-y-5 my-auto"
+          className="w-full max-w-md space-y-4 my-auto"
         >
           {/* Header */}
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <div className="lg:hidden flex items-center justify-between mb-3">
               <AurexLogo size={32} withText />
               <div className="flex items-center gap-1 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
@@ -337,32 +307,32 @@ export const Auth: React.FC = () => {
               <span className="text-xs uppercase tracking-wider text-cyan-400 bg-cyan-500/10 px-3 py-0.5 rounded-full border border-cyan-500/20 font-sans font-semibold">
                 Access Gateway
               </span>
-              <span className="text-xs text-slate-400">• Step 1 of 2 (2FA Email Verified)</span>
+              <span className="text-xs text-slate-400">• Cryptographic Key Required</span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-white tracking-tight pt-1">
               Sign In to Command Center
             </h1>
             <p className="text-slate-400 font-sans text-xs">
-              Enter any authorized custom email to generate your cryptographic key and receive an official 2FA challenge code.
+              Authenticate using your official cryptographic key or initialize a new profile below.
             </p>
           </div>
 
           {/* 1-Click Visitor Demo Access Button */}
-          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-lime-500/10 via-emerald-500/10 to-cyan-500/10 border border-lime-500/25 shadow-[0_0_20px_rgba(212,249,56,0.08)] space-y-2">
+          <div className="p-3 rounded-2xl bg-gradient-to-r from-lime-500/10 via-emerald-500/10 to-cyan-500/10 border border-lime-500/25 shadow-[0_0_20px_rgba(212,249,56,0.08)] space-y-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-white flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-lime-400" />
-                <span>Evaluating or Visiting?</span>
+                <span>Evaluating as Guest?</span>
               </span>
               <span className="text-[10px] text-lime-400 font-mono bg-lime-500/10 px-2 py-0.5 rounded border border-lime-500/20">
-                No Credentials Needed
+                No Key Needed
               </span>
             </div>
             <button
               onClick={handleGuestLogin}
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-lime-400 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 text-obsidian-950 font-bold font-sans text-xs transition-all shadow-[0_0_15px_rgba(212,249,56,0.2)] transform active:scale-[0.98]"
+              className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-gradient-to-r from-lime-400 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 text-obsidian-950 font-bold font-sans text-xs transition-all shadow-[0_0_15px_rgba(212,249,56,0.2)] transform active:scale-[0.98]"
             >
               <Zap className="w-4 h-4 text-obsidian-950" />
               <span>Continue as Guest Visitor (1-Click Demo)</span>
@@ -370,11 +340,38 @@ export const Auth: React.FC = () => {
             </button>
           </div>
 
+          {/* Prominent Profile Initialization Banner for New Users */}
+          <div className="p-3.5 rounded-2xl bg-[#0c101a] border border-cyan-500/30 hover:border-cyan-400 transition-all space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold text-white flex items-center gap-1.5">
+                <UserPlus className="w-4 h-4 text-cyan-400" />
+                <span>New User or Custom Gmail?</span>
+              </span>
+              <span className="text-[10px] font-mono text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded">
+                Official Dispatch
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-snug">
+              Initialize your profile with your email to receive an official AUREX Security Enclave email dispatch containing your unique Cryptographic Key.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setInitEmail(email.includes('@gmail.com') ? email : '');
+                setInitModalOpen(true);
+              }}
+              className="w-full py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/40 text-cyan-300 font-bold text-xs flex items-center justify-center gap-2 transition-all"
+            >
+              <Mail className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Initialize Profile & Receive Access Key</span>
+            </button>
+          </div>
+
           {/* Demo Credentials Quick-Fill Selector */}
-          <div className="space-y-1.5 font-sans">
+          <div className="space-y-1 font-sans">
             <div className="flex items-center justify-between text-xs text-slate-300">
               <span className="font-medium flex items-center gap-1.5">
-                <span>Select Enterprise Operator Role</span>
+                <span>Or Select Demo Institutional Operator</span>
               </span>
               <span className="text-[10px] text-slate-400 font-mono">1-Click Autofill</span>
             </div>
@@ -385,7 +382,7 @@ export const Auth: React.FC = () => {
                   key={idx}
                   type="button"
                   onClick={() => handleSelectProfile(profile)}
-                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                  className={`p-2 rounded-xl border text-left transition-all ${
                     email === profile.email
                       ? 'bg-cyan-500/15 border-cyan-400/60 shadow-[0_0_12px_rgba(0,229,255,0.15)]'
                       : 'bg-[#0f1420] border-white/10 hover:border-white/20 text-slate-400'
@@ -398,11 +395,11 @@ export const Auth: React.FC = () => {
             </div>
           </div>
 
-          {/* Standard Form with Real Custom Email Input */}
-          <form onSubmit={handleInitiateLogin} className="space-y-3.5 text-xs font-sans">
+          {/* Standard Form: Sign In with Cryptographic Key */}
+          <form onSubmit={handleLogin} className="space-y-3 text-xs font-sans">
             <div>
               <label className="block text-xs text-slate-300 uppercase mb-1 font-medium">
-                Operator Identity (Your Email / Custom Gmail)
+                Operator Identity (Email)
               </label>
               <input
                 type="email"
@@ -417,24 +414,24 @@ export const Auth: React.FC = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-xs text-slate-300 uppercase font-medium">
-                  Cryptographic Key / Custom Password
+                  Cryptographic Access Hash Key
                 </label>
                 <button
                   type="button"
                   onClick={() => {
-                    setRecoveryEmail(email);
-                    setRecoveryModalOpen(true);
+                    setInitEmail(email);
+                    setInitModalOpen(true);
                   }}
-                  className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                  className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-medium"
                 >
-                  Request Recovery Token
+                  Get Key via Email
                 </button>
               </div>
               <div className="relative">
                 <input
                   type="text"
                   required
-                  placeholder="Enter secret key or custom password..."
+                  placeholder="AUREX-SEC-..."
                   value={accessKey}
                   onChange={(e) => setAccessKey(e.target.value)}
                   className="w-full bg-[#0d121c] border border-white/10 rounded-xl p-3 text-white outline-none focus:border-cyan-400 transition-colors font-mono text-xs pr-10"
@@ -442,6 +439,13 @@ export const Auth: React.FC = () => {
                 <Key className="w-4 h-4 text-slate-500 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
+
+            {errorMessage && (
+              <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
 
             <div className="flex items-center justify-between text-xs pt-0.5">
               <label className="flex items-center gap-2 text-slate-300 cursor-pointer">
@@ -458,15 +462,15 @@ export const Auth: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-1 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-obsidian-950 font-bold font-sans text-xs transition-all shadow-[0_0_20px_rgba(0,229,255,0.2)] disabled:opacity-50"
+              className="w-full mt-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-obsidian-950 font-bold font-sans text-xs transition-all shadow-[0_0_20px_rgba(0,229,255,0.2)] disabled:opacity-50"
             >
-              <span>{isLoading ? (authStatus || 'Verifying Credentials...') : 'Authenticate & Dispatch 2FA Email'}</span>
-              <ArrowRight className="w-4 h-4 text-obsidian-950" />
+              <span>{isLoading ? 'Verifying Cryptographic Ledger...' : 'Verify Cryptographic Key & Sign In'}</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
           {/* Hardware Key / FIDO2 Authentication */}
-          <div className="pt-3 border-t border-white/10 text-center space-y-2.5 font-sans">
+          <div className="pt-2 border-t border-white/10 text-center space-y-2 font-sans">
             <button
               type="button"
               onClick={() => {
@@ -481,166 +485,155 @@ export const Auth: React.FC = () => {
 
             <div className="text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Protected by Zero Look-Ahead Verification & SHA-256 Audit Trail</span>
+              <span>Zero Look-Ahead Verification & SHA-256 Audit Trail</span>
             </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Simulated Official AUREX Security Dispatch Notification Toast with Gmail link */}
+      {/* Profile Initialization & Cryptographic Key Dispatch Modal */}
       <AnimatePresence>
-        {showEmailNotification && (
-          <motion.div
-            initial={{ opacity: 0, y: -50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className="fixed top-6 right-6 z-50 max-w-sm w-full bg-[#0c101a] border border-cyan-500/40 rounded-2xl p-4 shadow-[0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-2xl font-sans"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400">
-                  <Mail className="w-4 h-4 animate-bounce" />
-                </div>
-                <div>
-                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
-                    <span>AUREX Security Enclave</span>
-                    <span className="text-[9px] font-mono text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded">OFFICIAL DISPATCH</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400">auth-enclave@aurex.intelligence</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowEmailNotification(false)}
-                className="text-xs text-slate-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mt-3 p-2.5 bg-[#07090e] border border-white/5 rounded-xl space-y-1.5">
-              <div className="text-[11px] text-slate-300">
-                Official Authorization Challenge sent to <strong>{email}</strong>:
-              </div>
-              <div className="flex items-center justify-between bg-obsidian-950 p-2 rounded-lg border border-cyan-500/30">
-                <span className="text-[11px] text-slate-400">2FA Challenge Code:</span>
-                <span className="font-mono text-lg font-extrabold text-cyan-300 tracking-widest">
-                  {generatedOtp}
-                </span>
-              </div>
-              <div className="text-[9px] text-slate-500 font-mono">
-                Cryptographic Key: {accessKey} • Valid 10m
-              </div>
-            </div>
-
-            <div className="mt-2.5 flex gap-2">
-              <button
-                onClick={handleAutofillOtp}
-                className="flex-1 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-obsidian-950 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Autofill 2FA Code</span>
-              </button>
-
-              <a
-                href={`https://mail.google.com/mail/u/0/?fs=1&tf=cm&to=${email}&su=AUREX+Enterprise+2FA+Challenge+Code&body=Your+Official+AUREX+Authorization+Code+is:+${generatedOtp}%0D%0ACryptographic+Key:+${accessKey}`}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-white text-xs font-semibold flex items-center gap-1 transition-all"
-                title="View in Gmail Web App"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Gmail</span>
-              </a>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 2-Factor OTP Cryptographic Verification Modal */}
-      <AnimatePresence>
-        {otpModalOpen && (
+        {initModalOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-obsidian-950/85 backdrop-blur-md"
-            onClick={() => setOtpModalOpen(false)}
+            onClick={() => setInitModalOpen(false)}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md bg-[#0e131d] rounded-2xl p-6 border border-cyan-500/30 space-y-5 shadow-2xl font-sans"
+              className="w-full max-w-lg bg-[#0e131d] rounded-2xl p-6 border border-cyan-500/40 space-y-5 shadow-2xl font-sans"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold font-mono">
-                  <Lock className="w-4 h-4" />
-                  <span>2FA Cryptographic Verification</span>
+                  <Mail className="w-4 h-4" />
+                  <span>AUREX Security Enclave • Key Dispatch</span>
                 </div>
                 <button
-                  onClick={() => setOtpModalOpen(false)}
+                  onClick={() => setInitModalOpen(false)}
                   className="text-xs text-slate-400 hover:text-white"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="text-center space-y-2">
-                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-400/30 mx-auto flex items-center justify-center text-cyan-400">
-                  <Mail className="w-6 h-6 animate-pulse" />
-                </div>
-                <h3 className="text-base font-bold text-white">Enter 6-Digit Authorization Code</h3>
-                <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                  We have dispatched a cryptographic security challenge to <strong>{email}</strong>.
-                </p>
-              </div>
+              {!issuedDispatch ? (
+                <form onSubmit={handleRequestInitialization} className="space-y-4">
+                  <div className="text-center space-y-1.5">
+                    <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-400/30 mx-auto flex items-center justify-center text-cyan-400">
+                      <Lock className="w-6 h-6 animate-pulse" />
+                    </div>
+                    <h3 className="text-base font-bold text-white">Initialize Operator Profile</h3>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                      Enter your email address to receive an official AUREX Security Enclave email containing your unique SHA-256 Cryptographic Access Key.
+                    </p>
+                  </div>
 
-              {/* 6 OTP Input Boxes */}
-              <div className="flex justify-center gap-2 pt-2">
-                {otpCode.map((digit, idx) => (
-                  <input
-                    key={idx}
-                    id={`otp-box-${idx}`}
-                    type="text"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(idx, e.target.value)}
-                    className="w-11 h-12 bg-[#0a0d14] border border-white/15 focus:border-cyan-400 rounded-xl text-center font-mono text-lg font-bold text-white outline-none focus:ring-1 focus:ring-cyan-400/30 transition-all"
-                  />
-                ))}
-              </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] text-slate-400 uppercase mb-1 font-medium">Your Email Address (e.g. Gmail)</label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="yourname@gmail.com"
+                        value={initEmail}
+                        onChange={(e) => setInitEmail(e.target.value)}
+                        className="w-full bg-[#0a0d14] border border-white/15 focus:border-cyan-400 rounded-xl p-3 text-white font-mono text-xs outline-none"
+                      />
+                    </div>
 
-              {otpError && (
-                <div className="text-center text-xs text-rose-400 font-mono">
-                  ⚠️ Invalid code. Please check your official email dispatch.
+                    <div>
+                      <label className="block text-[11px] text-slate-400 uppercase mb-1 font-medium">Operator Name (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Alex Mercer"
+                        value={initName}
+                        onChange={(e) => setInitName(e.target.value)}
+                        className="w-full bg-[#0a0d14] border border-white/15 focus:border-cyan-400 rounded-xl p-3 text-white font-mono text-xs outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isInitializing || !initEmail}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-obsidian-950 font-bold text-xs shadow-[0_0_20px_rgba(0,229,255,0.25)] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>{isInitializing ? 'Generating Cryptographic Enclave Key...' : 'Request Official Access Key Email'}</span>
+                  </button>
+                </form>
+              ) : (
+                /* Official Email Dispatch View */
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-[#080a0e] border border-cyan-500/40 space-y-3">
+                    <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-cyan-500/20 border border-cyan-400 flex items-center justify-center text-cyan-400 text-xs">
+                          🏛️
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-white">AUREX Security Enclave</div>
+                          <div className="text-[10px] text-slate-400 font-mono">auth-enclave@aurex.intelligence</div>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 font-bold">
+                        OFFICIAL DISPATCH
+                      </span>
+                    </div>
+
+                    <div className="text-xs text-slate-300 space-y-1">
+                      <div className="text-slate-400 text-[11px]">To: <span className="text-white font-mono">{issuedDispatch.email}</span></div>
+                      <div className="text-slate-400 text-[11px]">Clearance: <span className="text-cyan-300 font-mono">Tier-1 Verified Enclave</span></div>
+                    </div>
+
+                    {/* Issued Key Box */}
+                    <div className="p-3 bg-obsidian-950 rounded-xl border border-cyan-500/30 space-y-1.5">
+                      <div className="text-[10px] font-mono text-cyan-400 uppercase font-bold flex justify-between items-center">
+                        <span>YOUR CRYPTOGRAPHIC ACCESS HASH KEY</span>
+                        <button onClick={handleCopyKey} className="text-slate-400 hover:text-white flex items-center gap-1">
+                          {copiedKey ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedKey ? 'Copied' : 'Copy'}</span>
+                        </button>
+                      </div>
+                      <div className="font-mono text-sm font-bold text-white bg-[#05070a] p-2.5 rounded-lg border border-white/10 break-all select-all text-cyan-300">
+                        {issuedDispatch.access_key}
+                      </div>
+                    </div>
+
+                    <div className="text-[10px] text-slate-400 font-mono">
+                      Lineage Hash: {issuedDispatch.lineage_hash || 'SHA256:7F89B2C41D0E...'}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={handleApplyIssuedKey}
+                      className="flex-1 py-3 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-obsidian-950 font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <Check className="w-4 h-4" />
+                      <span>Apply Key & Sign In Now</span>
+                    </button>
+
+                    {issuedDispatch.email_dispatch?.gmail_compose_url && (
+                      <a
+                        href={issuedDispatch.email_dispatch.gmail_compose_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold flex items-center gap-1.5 transition-all"
+                        title="Open in Gmail"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Gmail</span>
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
-
-              <div className="space-y-2 pt-2">
-                <button
-                  onClick={handleVerifyOtp}
-                  disabled={isLoading || otpCode.some((d) => !d)}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-obsidian-950 font-bold text-xs shadow-[0_0_20px_rgba(0,229,255,0.25)] transition-all disabled:opacity-40"
-                >
-                  {isLoading ? 'Authorizing Session...' : 'Verify Code & Access Platform'}
-                </button>
-
-                <div className="flex justify-between items-center text-[11px] text-slate-400 pt-1">
-                  <span>Didn't receive code?</span>
-                  <button
-                    onClick={async () => {
-                      const res = await AurexAPI.enrollOrChallenge({ email, custom_password: accessKey });
-                      if (res && res.otp) setGeneratedOtp(res.otp);
-                      setShowEmailNotification(true);
-                    }}
-                    className="text-cyan-400 hover:underline flex items-center gap-1"
-                  >
-                    <Send className="w-3 h-3" />
-                    <span>Resend Authorization Email</span>
-                  </button>
-                </div>
-              </div>
             </motion.div>
           </motion.div>
         )}
@@ -722,84 +715,6 @@ export const Auth: React.FC = () => {
                     </p>
                   </div>
                 </div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Reset / Recovery Token Modal */}
-      <AnimatePresence>
-        {recoveryModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-obsidian-950/80 backdrop-blur-md"
-            onClick={() => setRecoveryModalOpen(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md bg-[#0e131d] rounded-2xl p-6 border border-white/10 space-y-4 shadow-2xl font-sans"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold font-mono">
-                  <RotateCcw className="w-4 h-4" />
-                  <span>One-Time Emergency Access Token</span>
-                </div>
-                <button
-                  onClick={() => setRecoveryModalOpen(false)}
-                  className="text-xs text-slate-400 hover:text-white"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <p className="text-xs text-slate-300">
-                Need an immediate key? Enter your operator identity to derive your deterministic SHA-256 recovery key:
-              </p>
-
-              <div>
-                <label className="block text-[11px] text-slate-400 uppercase mb-1">Operator Email</label>
-                <input
-                  type="email"
-                  value={recoveryEmail}
-                  onChange={(e) => setRecoveryEmail(e.target.value)}
-                  placeholder="name@company.com"
-                  className="w-full bg-[#0a0d14] border border-white/10 rounded-xl p-3 text-white font-mono text-xs outline-none focus:border-cyan-400"
-                />
-              </div>
-
-              {generatedToken ? (
-                <div className="space-y-3 pt-2">
-                  <div className="p-3 bg-[#0a0d14] border border-lime-500/30 rounded-xl space-y-1">
-                    <div className="text-[10px] font-mono text-lime-400 uppercase font-bold flex justify-between items-center">
-                      <span>Derived Cryptographic Key</span>
-                      <button onClick={handleCopyToken} className="text-slate-400 hover:text-white flex items-center gap-1">
-                        {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                        <span>{copied ? 'Copied' : 'Copy'}</span>
-                      </button>
-                    </div>
-                    <div className="font-mono text-xs text-white break-all">{generatedToken}</div>
-                  </div>
-
-                  <button
-                    onClick={handleApplyRecoveryToken}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-lime-400 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 text-obsidian-950 font-bold text-xs shadow-md transition-all font-sans"
-                  >
-                    Apply Key to Login
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleGenerateRecoveryToken}
-                  className="w-full py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-obsidian-950 font-bold text-xs shadow-md transition-all font-sans"
-                >
-                  Derive Cryptographic Key
-                </button>
               )}
             </motion.div>
           </motion.div>

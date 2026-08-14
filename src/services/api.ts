@@ -28,55 +28,37 @@ export interface AidenChatMessage {
 
 export class AurexAPI {
   /**
-   * Enroll Operator / Dispatch 2FA Challenge Email
+   * Initialize Operator Profile & Receive Cryptographic Access Hash Key via Official Email
    */
-  static async enrollOrChallenge(params: { email: string; name?: string; role?: string; custom_password?: string }) {
+  static async initializeProfile(params: { email: string; name?: string; role?: string }) {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/enroll`, {
+      const res = await fetch(`${API_BASE_URL}/auth/initialize-profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
       });
-      if (!res.ok) throw new Error('Enrollment challenge failed');
+      if (!res.ok) throw new Error('Profile initialization failed');
       return await res.json();
     } catch (err) {
-      console.warn('[AUREX API] Auth challenge fallback:', err);
+      console.warn('[AUREX API] Auth initialize fallback:', err);
       return null;
     }
   }
 
   /**
-   * Verify 2FA OTP Code
+   * Authenticate with Cryptographic Access Hash Key
    */
-  static async verifyOtp(params: { email: string; otp: string; access_key?: string }) {
+  static async loginWithKey(params: { email: string; access_key: string }) {
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/verify`, {
+      const res = await fetch(`${API_BASE_URL}/auth/login-with-key`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(params),
       });
-      if (!res.ok) throw new Error('OTP verification failed');
+      if (!res.ok) throw new Error('Invalid cryptographic key');
       return await res.json();
     } catch (err) {
-      console.warn('[AUREX API] OTP verification fallback:', err);
-      return null;
-    }
-  }
-
-  /**
-   * Request Cryptographic Recovery Token
-   */
-  static async requestRecovery(email: string) {
-    try {
-      const res = await fetch(`${API_BASE_URL}/auth/recovery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      if (!res.ok) throw new Error('Recovery request failed');
-      return await res.json();
-    } catch (err) {
-      console.warn('[AUREX API] Recovery token fallback:', err);
+      console.warn('[AUREX API] Login with key fallback:', err);
       return null;
     }
   }
