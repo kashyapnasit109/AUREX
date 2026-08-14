@@ -11,6 +11,11 @@ import {
   Database,
   ChevronDown,
   Check,
+  SlidersHorizontal,
+  Activity,
+  ShieldCheck,
+  ArrowRight,
+  Zap,
 } from 'lucide-react';
 import {
   BarChart,
@@ -47,6 +52,9 @@ export const DataMart: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [askAurexOpen, setAskAurexOpen] = useState(false);
   const [activeEvidence, setActiveEvidence] = useState<EvidenceTrace | null>(null);
+
+  // Quick Slice Filter State
+  const [selectedCohort, setSelectedCohort] = useState<'ENTERPRISE' | 'HIGH_GROWTH'>('ENTERPRISE');
 
   const handleRefresh = () => {
     setIsRefreshing(true);
@@ -114,7 +122,7 @@ export const DataMart: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Workspace Layout */}
+      {/* Main Symmetrical Workspace Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left 4 Cols: Ingestion Feeds & Autonomous Insights */}
         <div className="lg:col-span-4 space-y-6">
@@ -224,7 +232,7 @@ export const DataMart: React.FC = () => {
           </div>
         </div>
 
-        {/* Right 8 Cols: Visual Canvas */}
+        {/* Right 8 Cols: Visual Canvas + Elegant Cohort Intelligence */}
         <div className="lg:col-span-8 space-y-6">
           {/* Top Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-sans">
@@ -302,7 +310,7 @@ export const DataMart: React.FC = () => {
 
             {/* View 1: Radiant Stylized Regional Bar Chart */}
             {activeView === 'regional' && (
-              <div className="w-full h-80">
+              <div className="w-full h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={mockRegionalMetrics} margin={{ top: 20, right: 20, left: 10, bottom: 0 }}>
                     <defs>
@@ -340,7 +348,7 @@ export const DataMart: React.FC = () => {
                         if (active && payload && payload.length) {
                           const data = payload[0].payload;
                           return (
-                            <div className="glass-card p-3 rounded-xl border border-white/20 text-xs shadow-2xl font-sans space-y-1">
+                            <div className="glass-card p-3.5 rounded-xl border border-white/20 text-xs shadow-2xl font-sans space-y-1">
                               <div className="font-bold text-white text-sm">{data.region}</div>
                               <div className="text-cyan-400 font-mono font-bold text-sm">
                                 Revenue: ${data.revenue.toLocaleString()}
@@ -372,7 +380,7 @@ export const DataMart: React.FC = () => {
 
             {/* View 2: Monthly Trajectory Area Chart */}
             {activeView === 'monthly' && (
-              <div className="w-full h-80">
+              <div className="w-full h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={mockMonthlyPerformance} margin={{ top: 20, right: 20, left: 10, bottom: 0 }}>
                     <defs>
@@ -421,7 +429,7 @@ export const DataMart: React.FC = () => {
 
             {/* View 3: Enterprise Data Grid */}
             {activeView === 'table' && (
-              <div className="overflow-x-auto max-h-80">
+              <div className="overflow-x-auto max-h-72">
                 <table className="w-full text-left font-mono text-xs border-collapse">
                   <thead className="sticky top-0 bg-obsidian-950 text-slate-300 uppercase text-xs border-b border-white/10 font-sans font-bold">
                     <tr>
@@ -454,6 +462,134 @@ export const DataMart: React.FC = () => {
                 </table>
               </div>
             )}
+          </div>
+
+          {/* High-Contrast Dimensional Cohort Decomposition & Strategic Action Strip */}
+          <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10 space-y-6 shadow-2xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                  <SlidersHorizontal className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-base leading-tight">
+                    Dimensional Cohort Intelligence
+                  </h3>
+                  <span className="text-xs text-slate-400 font-sans">
+                    Micro-segment retention, margin density & AI revenue expansion
+                  </span>
+                </div>
+              </div>
+
+              {/* Segment Toggle */}
+              <div className="flex items-center gap-1.5 p-1 bg-obsidian-950 rounded-xl border border-white/15 text-xs font-sans">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCohort('ENTERPRISE')}
+                  className={`px-3.5 py-1.5 rounded-lg transition-all font-semibold ${
+                    selectedCohort === 'ENTERPRISE'
+                      ? 'bg-cyan-500 text-obsidian-950 font-bold shadow-cyan-glow'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  Enterprise Tier
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCohort('HIGH_GROWTH')}
+                  className={`px-3.5 py-1.5 rounded-lg transition-all font-semibold ${
+                    selectedCohort === 'HIGH_GROWTH'
+                      ? 'bg-lime-500 text-obsidian-950 font-bold shadow-lime-glow'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  High-Growth Mid-Market
+                </button>
+              </div>
+            </div>
+
+            {/* 3 High-Contrast Telemetry Pillar Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 font-sans">
+              {/* Pillar 1 */}
+              <div className="p-5 rounded-2xl bg-obsidian-950/90 border border-white/10 flex flex-col justify-between space-y-3 shadow-inner">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                    Gross Margin Density
+                  </span>
+                  <Activity className="w-4 h-4 text-lime-400" />
+                </div>
+                <div className="text-3xl font-mono font-extrabold text-lime-400">
+                  {selectedCohort === 'ENTERPRISE' ? '42.8%' : '36.4%'}
+                </div>
+                <p className="text-slate-200 text-xs font-medium leading-relaxed">
+                  {selectedCohort === 'ENTERPRISE'
+                    ? 'Optimal gross profit contribution across Tier-1 multi-seat enterprise contracts.'
+                    : 'Rapid volume adoption with expanding unit economics across growth tiers.'}
+                </p>
+              </div>
+
+              {/* Pillar 2 */}
+              <div className="p-5 rounded-2xl bg-obsidian-950/90 border border-white/10 flex flex-col justify-between space-y-3 shadow-inner">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                    Retention Score
+                  </span>
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div className="text-3xl font-mono font-extrabold text-emerald-400">
+                  {selectedCohort === 'ENTERPRISE' ? '94.2%' : '88.7%'}
+                </div>
+                <p className="text-slate-200 text-xs font-medium leading-relaxed">
+                  {selectedCohort === 'ENTERPRISE'
+                    ? 'Zero high-value contract churn detected across North America Q3 renewal cycles.'
+                    : '12-month cohort retention stabilized after automated proactive onboarding.'}
+                </p>
+              </div>
+
+              {/* Pillar 3 */}
+              <div className="p-5 rounded-2xl bg-obsidian-950/90 border border-white/10 flex flex-col justify-between space-y-3 shadow-inner">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                    Cross-Domain AI Uplift
+                  </span>
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div className="text-3xl font-mono font-extrabold text-cyan-400">
+                  {selectedCohort === 'ENTERPRISE' ? '+$1.40M' : '+$820k'}
+                </div>
+                <p className="text-slate-200 text-xs font-medium leading-relaxed">
+                  {selectedCohort === 'ENTERPRISE'
+                    ? 'Incremental ARR generated from automated pricing elasticity recommendations.'
+                    : 'Targeted hardware and accessory procurement bundles driving cross-sell.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Clean Enterprise Synthesis & Action Bar (Replacing raw SQL) */}
+            <div className="p-4 bg-obsidian-950 rounded-2xl border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="p-2 rounded-xl bg-lime-500/10 text-lime-400 border border-lime-500/20 shrink-0">
+                  <Zap className="w-4 h-4" />
+                </span>
+                <div>
+                  <div className="text-xs font-bold text-white leading-tight">
+                    Strategic AI Cohort Synthesis
+                  </div>
+                  <div className="text-xs text-slate-300 font-sans mt-0.5">
+                    Enterprise tier renewals are driving <strong className="text-lime-400">64% of net incremental ARR</strong> this quarter.
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setAskAurexOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-lime-500 hover:bg-lime-400 text-obsidian-950 font-bold text-xs shadow-lime-glow transition-all shrink-0 font-sans"
+              >
+                <span>Ask AUREX to Explain</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
