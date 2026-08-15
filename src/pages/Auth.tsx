@@ -157,17 +157,18 @@ export const Auth: React.FC = () => {
   // Resend verification code helper
   const handleResendCode = async () => {
     setErrorMessage(null);
-    setSuccessMessage('Resending verification code via Gmail SMTP...');
+    setSuccessMessage('Dispatching verification code via Gmail SMTP...');
     try {
-      const res = await AurexAPI.signUp({ email: pendingEmail, password, name });
+      const res = await AurexAPI.resendCode(pendingEmail);
       if (res && res.code) {
         setActiveCode(res.code);
-        setSuccessMessage(`New verification code generated and dispatched to ${pendingEmail}.`);
+        setSuccessMessage(`Verification code successfully dispatched to ${pendingEmail}.`);
       }
     } catch {
       setSuccessMessage('Verification code resent.');
     }
   };
+
 
   // Handle Individual Sign In Submission
 

@@ -136,7 +136,33 @@ def verify_email(payload: VerifyEmailRequest):
     save_users(users)
     return {"verified": True, "message": "Email verified successfully! You may now sign in."}
 
+# ─── Resend Verification Code ──────────────────────────────────────
+class ResendCodeRequest(BaseModel):
+    email: str
+
+@router.post("/resend-code")
+def resend_code(payload: ResendCodeRequest):
+    email_clean = payload.email.lower().strip()
+    users = load_users()
+    user = users.get(email_clean)
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="Account not found. Please sign up first.")
+        
+    code = f"{random.randint(100000, 999999)}"
+    user["verification_code"] = code
+    save_users(users)
+    
+    sent = EmailService.send_verification_email(email_clean, code)
+    return {
+        "status": "SUCCESS",
+        "email": email_clean,
+        "code": code,
+        "message": f"New verification code {'sent to your email' if sent else 'generated'}. Please check your inbox."
+    }
+
 # ─── 2FA Setup ─────────────────────────────────────────────────────
+
 @router.post("/2fa/setup")
 def setup_2fa(payload: Setup2FARequest):
     email_clean = payload.email.lower().strip()

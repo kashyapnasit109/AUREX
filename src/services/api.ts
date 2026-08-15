@@ -86,6 +86,26 @@ export class AurexAPI {
   }
 
   /**
+   * Resend 6-digit verification OTP code to user's email
+   */
+  static async resendCode(email: string) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/resend-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to resend code');
+      return data;
+    } catch (err: any) {
+      console.warn('[AUREX API] Resend code fallback:', err);
+      return null;
+    }
+  }
+
+
+  /**
    * Log in as Organization / Enterprise SSO
    */
   static async orgLogin(params: { work_email: string; org_id?: string; password: string }) {

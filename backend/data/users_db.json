@@ -15,7 +15,7 @@
     "password_hash": "ce2744b2f2f8f927488a1fdb202a2e08af449091bc727aaa2b24493d1892fe6a",
     "role": "Institutional Operator",
     "is_verified": true,
-    "verification_code": "199485",
+    "verification_code": "660376",
     "registered_at": 1786766342,
     "totp_secret_pending": "B3UXYBPL46NBD5MXSUNOHZ7M7ASBYKK7"
   },
@@ -51,5 +51,15 @@
     "totp_enabled": true,
     "registered_at": 1786770874,
     "totp_secret": "BVWQFLN2A5E5LS5T5Z7LJRIJGFABOUY6"
+  },
+  "operator.test@aurex.intelligence": {
+    "name": "Operator Test",
+    "email": "operator.test@aurex.intelligence",
+    "password_hash": "a109e36947ad56de1dca1cc49f0ef8ac9ad9a7b1aa0df41fb3c4cb73c1ff01ea",
+    "role": "Institutional Operator",
+    "is_verified": false,
+    "verification_code": "646789",
+    "totp_enabled": false,
+    "registered_at": 1786778448
   }
 }
