@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
 import hashlib
 import time
@@ -49,25 +49,26 @@ def save_users(users_data: dict):
         print(f"[AUTH DB] Save error: {e}")
 
 class SignUpRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
     name: str
 
 class VerifyEmailRequest(BaseModel):
-    email: EmailStr
+    email: str
     code: str
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
     totp_code: Optional[str] = None
 
 class Setup2FARequest(BaseModel):
-    email: EmailStr
+    email: str
 
 class Verify2FARequest(BaseModel):
-    email: EmailStr
+    email: str
     code: str
+
 
 class OAuthGoogleRequest(BaseModel):
     id_token: str
@@ -216,9 +217,10 @@ def get_2fa_status(email: str):
 
 # ─── Organization Login ────────────────────────────────────────────
 class OrgLoginRequest(BaseModel):
-    work_email: EmailStr
+    work_email: str
     org_id: Optional[str] = "ORG-DEFAULT"
     password: str
+
 
 @router.post("/org-login")
 def org_login(payload: OrgLoginRequest):
