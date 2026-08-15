@@ -13,7 +13,9 @@ import {
   Check,
   RotateCcw,
   Building2,
-  Globe
+  Globe,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { ParticleCore } from '../components/canvas/ParticleCore';
 import { AurexLogo } from '../components/brand/AurexLogo';
@@ -42,6 +44,11 @@ export const Auth: React.FC = () => {
   const [workEmail, setWorkEmail] = useState('');
   const [orgId, setOrgId] = useState('');
   const [orgPassword, setOrgPassword] = useState('');
+
+  // Password Visibility States
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showOrgPassword, setShowOrgPassword] = useState(false);
 
   // Email Verification Code Modal State
   const [verifyModalOpen, setVerifyModalOpen] = useState(false);
@@ -491,7 +498,7 @@ export const Auth: React.FC = () => {
                 </label>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     placeholder="••••••••"
                     value={password}
@@ -499,9 +506,17 @@ export const Auth: React.FC = () => {
                       setPassword(e.target.value);
                       setErrorMessage(null);
                     }}
-                    className="w-full bg-obsidian-850 border border-white/10 rounded-xl p-3 pl-10 text-white outline-none focus:border-lime-400 transition-colors font-sans text-xs placeholder:text-slate-600"
+                    className="w-full bg-obsidian-850 border border-white/10 rounded-xl p-3 pl-10 pr-10 text-white outline-none focus:border-lime-400 transition-colors font-sans text-xs placeholder:text-slate-600"
                   />
                   <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 focus:outline-none transition-colors p-1"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -565,7 +580,7 @@ export const Auth: React.FC = () => {
                 </label>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     placeholder="At least 6 characters"
                     value={password}
@@ -573,9 +588,17 @@ export const Auth: React.FC = () => {
                       setPassword(e.target.value);
                       setErrorMessage(null);
                     }}
-                    className="w-full bg-obsidian-850 border border-white/10 rounded-xl p-3 pl-10 text-white outline-none focus:border-lime-400 transition-colors font-sans text-xs placeholder:text-slate-600"
+                    className="w-full bg-obsidian-850 border border-white/10 rounded-xl p-3 pl-10 pr-10 text-white outline-none focus:border-lime-400 transition-colors font-sans text-xs placeholder:text-slate-600"
                   />
                   <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 focus:outline-none transition-colors p-1"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -585,7 +608,7 @@ export const Auth: React.FC = () => {
                 </label>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     required
                     placeholder="Re-enter your password"
                     value={confirmPassword}
@@ -593,9 +616,17 @@ export const Auth: React.FC = () => {
                       setConfirmPassword(e.target.value);
                       setErrorMessage(null);
                     }}
-                    className="w-full bg-obsidian-850 border border-white/10 rounded-xl p-3 pl-10 text-white outline-none focus:border-lime-400 transition-colors font-sans text-xs placeholder:text-slate-600"
+                    className="w-full bg-obsidian-850 border border-white/10 rounded-xl p-3 pl-10 pr-10 text-white outline-none focus:border-lime-400 transition-colors font-sans text-xs placeholder:text-slate-600"
                   />
                   <KeyRound className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 focus:outline-none transition-colors p-1"
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -658,7 +689,7 @@ export const Auth: React.FC = () => {
                 </label>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showOrgPassword ? 'text' : 'password'}
                     required
                     placeholder="••••••••"
                     value={orgPassword}
@@ -666,9 +697,17 @@ export const Auth: React.FC = () => {
                       setOrgPassword(e.target.value);
                       setErrorMessage(null);
                     }}
-                    className="w-full bg-obsidian-850 border border-white/10 rounded-xl p-3 pl-10 text-white outline-none focus:border-lime-400 transition-colors font-sans text-xs placeholder:text-slate-600"
+                    className="w-full bg-obsidian-850 border border-white/10 rounded-xl p-3 pl-10 pr-10 text-white outline-none focus:border-lime-400 transition-colors font-sans text-xs placeholder:text-slate-600"
                   />
                   <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <button
+                    type="button"
+                    onClick={() => setShowOrgPassword(!showOrgPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 focus:outline-none transition-colors p-1"
+                    aria-label={showOrgPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showOrgPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
