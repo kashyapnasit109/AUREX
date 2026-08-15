@@ -127,6 +127,7 @@ export class AurexAPI {
     }
   }
 
+
   /**
    * Setup Google Authenticator 2FA (Generates QR Code & Base32 secret)
    */
@@ -411,4 +412,7 @@ export class AurexAPI {
       }
     };
   }
+
+  static chatAidenWithModel = AurexAPI.sendAidenChat;
 }
+
