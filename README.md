@@ -28,7 +28,7 @@ $$\text{DATA} \longrightarrow \text{ANALYSIS} \longrightarrow \text{INTELLIGENCE
 ```
                        ┌──────────────────────────────────────────┐
                        │        AUREX ENTERPRISE CORE             │
-                       │   FastAPI + DuckDB Engine (0.42ms)       │
+                       │   FastAPI + DuckDB Engine (Real-Time)    │
                        └────────────────────┬─────────────────────┘
                                             │
          ┌──────────────────────────────────┼──────────────────────────────────┐
@@ -58,17 +58,18 @@ $$\text{DATA} \longrightarrow \text{ANALYSIS} \longrightarrow \text{INTELLIGENCE
 ### Module 3: Aiden Retail AI (`/app/aiden`)
 - **Grounded Semantic Commerce**: Natural language shopping and enterprise procurement assistant grounded strictly in structured data warehouse catalogs (`DW_RETAIL.CATALOG_MASTER`).
 - **Multidimensional Match Decomposition**: Breaks down product match scores by individual customer criteria (e.g., Cabin ANC Isolation 99%, Battery 95%, Weight Ergonomics 94%).
-- **Verifiable Data Lineage Modal**: Real-time trace showing the exact warehouse tables, rows, and pricing models used to construct the answer with Zero-Hallucination verification.
+- **Verifiable Data Lineage Modal**: Real-time trace showing the exact warehouse tables, rows, and pricing models used to construct the answer with RAG-grounded verification.
 - **1-Hour Session Persistence & Profile Memory**: Chat history and product reasoning automatically persist across refreshes with 1-hour session isolation for visitors and permanent profile memory for logged-in operators.
 
 ### Module 4: Trust & Security Architecture (`/security`)
 - **6-Layer Enterprise Governance Stack**:
   1. *Zero Look-Ahead Bias Quarantine* (Point-in-time state machine).
   2. *Cryptographic Lineage Ledger* (SHA-256 hashed queries).
-  3. *Zero-Hallucination Grounding Barrier* (Deterministic catalog retrieval).
-  4. *Distributed Sub-Millisecond Core* (0.42ms engine runtime).
+  3. *RAG-Grounded Retrieval Barrier* (Deterministic catalog retrieval).
+  4. *High-Throughput Analytics Core* (Real-time vectorized runtime).
   5. *Role-Based Access Control* (SOC2 Type II compliant).
   6. *Continuous Automated Auditability* (Live discrepancy telemetry).
+
 
 ---
 

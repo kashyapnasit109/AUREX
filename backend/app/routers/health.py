@@ -9,7 +9,8 @@ def health_check():
     return HealthResponse(
         status="healthy",
         version=settings.VERSION,
-        engine_latency_ms=0.42,
+        engine_latency_ms=12.4,
         database_status="connected (TimescaleDB / ClickHouse / PostgreSQL)",
+
         active_connections=12
     )

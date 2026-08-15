@@ -1,14 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Play,
   RotateCcw,
   Sliders,
   ShieldCheck,
-  Sparkles,
-  TrendingUp,
-  Activity,
-  Layers,
-  ArrowUpRight
+  Sparkles
 } from 'lucide-react';
 import {
   AreaChart,
@@ -42,9 +38,9 @@ const generateDynamicQuantData = (
   splitPct: number,
   capital: number,
   leverage: number,
-  sharpeMultiplier: number,
-  instrument: string
+  sharpeMultiplier: number
 ) => {
+
   const points = 120;
   const splitIndex = Math.floor((points * splitPct) / 100);
   let strategyVal = capital;
@@ -101,7 +97,7 @@ export const QuantStudio: React.FC = () => {
   const [experimentData, setExperimentData] = useState<any>(null);
 
   const [quantData, setQuantData] = useState(() =>
-    generateDynamicQuantData(70, 100000, 3.5, strategyPresets[0].sharpe, 'SOL-PERP')
+    generateDynamicQuantData(70, 100000, 3.5, strategyPresets[0].sharpe)
   );
 
   const [metrics, setMetrics] = useState({
@@ -124,12 +120,15 @@ export const QuantStudio: React.FC = () => {
     cap: number = capital,
     lev: number = leverage,
     slip: number = slippageBps,
-    instr: string = instrument
+    _instr?: string
   ) => {
+
+
     setIsSimulating(true);
 
-    const generated = generateDynamicQuantData(split, cap, lev, strat.sharpe, instr);
+    const generated = generateDynamicQuantData(split, cap, lev, strat.sharpe);
     setQuantData(generated);
+
 
     // Compute dynamic metrics adjusted by leverage and trainSplit
     const levFactor = (lev / 2.0);

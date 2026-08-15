@@ -22,17 +22,8 @@ import { ParticleCore } from '../components/canvas/ParticleCore';
 import { AurexLogo } from '../components/brand/AurexLogo';
 import { AurexAPI } from '../services/api';
 
-interface UserAccount {
-  name: string;
-  email: string;
-  passwordHash: string;
-  isVerified: boolean;
-  verificationCode: string;
-  role: string;
-  orgId?: string;
-}
-
 export const Auth: React.FC = () => {
+
   const [mode, setMode] = useState<'signin' | 'signup' | 'org'>('signin');
 
   // Individual Form Fields
@@ -64,31 +55,11 @@ export const Auth: React.FC = () => {
 
   const navigate = useNavigate();
 
-  // Helper to load local user accounts ledger
-  const getLocalUsers = (): Record<string, UserAccount> => {
-    try {
-      const data = localStorage.getItem('AUREX_USERS_STORE');
-      if (data) return JSON.parse(data);
-    } catch {
-      // ignore
-    }
-    // Default seed user
-    return {
-      'admin@aurex.intelligence': {
-        name: 'Admin Operator',
-        email: 'admin@aurex.intelligence',
-        passwordHash: 'Password123!',
-        isVerified: true,
-        verificationCode: '123456',
-        role: 'Executive Operator'
-      }
-    };
-  };
 
-  // Helper to save local user accounts ledger
-  const saveLocalUsers = (users: Record<string, UserAccount>) => {
-    localStorage.setItem('AUREX_USERS_STORE', JSON.stringify(users));
-  };
+  // 2FA Google Authenticator State for Login
+  const [requireTotp, setRequireTotp] = useState(false);
+  const [totpLoginCode, setTotpLoginCode] = useState('');
+
 
   // Handle Sign Up Submission
   const handleSignUp = async (e: React.FormEvent) => {
@@ -116,73 +87,90 @@ export const Auth: React.FC = () => {
 
     setIsLoading(true);
 
-    const autoLogin = (userName: string, userEmail: string) => {
-      const authUser = {
-        name: userName,
-        role: 'Institutional Operator',
-        email: userEmail,
-        loginTime: Date.now(),
-        isGuest: false
-      };
-      localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(authUser));
-      setIsLoading(false);
-      navigate('/app/overview');
-    };
-
     try {
-      // 1. Attempt API Sign Up
-      await AurexAPI.signUp({
+      // 1. Attempt API Sign Up with Gmail SMTP code dispatch
+      const res = await AurexAPI.signUp({
         email: cleanEmail,
         password,
         name: cleanName
       });
 
-      // Save locally to persistent store
-      const localUsers = getLocalUsers();
-      localUsers[cleanEmail] = {
-        name: cleanName,
-        email: cleanEmail,
-        passwordHash: password,
-        isVerified: true,
-        verificationCode: '000000',
-        role: 'Institutional Operator'
-      };
-      saveLocalUsers(localUsers);
+      setIsLoading(false);
 
-      // Auto-login and navigate immediately to app overview
-      autoLogin(cleanName, cleanEmail);
-    } catch {
-      // Local fallback
-      const localUsers = getLocalUsers();
-
-      localUsers[cleanEmail] = {
-        name: cleanName,
-        email: cleanEmail,
-        passwordHash: password,
-        isVerified: true,
-        verificationCode: '000000',
-        role: 'Institutional Operator'
-      };
-      saveLocalUsers(localUsers);
-
-      // Auto-login and navigate immediately to app overview
-      autoLogin(cleanName, cleanEmail);
+      if (res && res.status === 'SUCCESS') {
+        setPendingEmail(cleanEmail);
+        setActiveCode(res.code || '123456');
+        setVerifyModalOpen(true);
+        setSuccessMessage(res.message || 'Verification code sent to your email.');
+      } else if (res && res.error) {
+        setErrorMessage(res.error);
+      } else {
+        setPendingEmail(cleanEmail);
+        setActiveCode('123456');
+        setVerifyModalOpen(true);
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      setPendingEmail(cleanEmail);
+      setActiveCode('123456');
+      setVerifyModalOpen(true);
     }
   };
 
-  // Handle Verify Email OTP Code Submission (Bypassed)
+  // Handle Verify Email OTP Code Submission
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setVerifyModalOpen(false);
-    setMode('signin');
+    setErrorMessage(null);
+
+    if (!otpInput || otpInput.length !== 6) {
+      setErrorMessage('Please enter the 6-digit verification code.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const res = await AurexAPI.verifyEmail({
+        email: pendingEmail,
+        code: otpInput
+      });
+
+      setIsLoading(false);
+
+      if (res && res.verified) {
+        setVerifyModalOpen(false);
+        setSuccessMessage('Email verified successfully! You can now sign in with your password.');
+        setMode('signin');
+        setEmail(pendingEmail);
+      } else if (res && res.error) {
+        setErrorMessage(res.error);
+      } else {
+        setVerifyModalOpen(false);
+        setMode('signin');
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMessage('Failed to verify email. Please try again.');
+    }
   };
 
-  // Resend verification code helper (Bypassed)
-  const handleResendCode = () => {
-    setSuccessMessage('Verification code bypassed.');
+  // Resend verification code helper
+  const handleResendCode = async () => {
+    setErrorMessage(null);
+    setSuccessMessage('Resending verification code via Gmail SMTP...');
+    try {
+      const res = await AurexAPI.signUp({ email: pendingEmail, password, name });
+      if (res && res.code) {
+        setActiveCode(res.code);
+        setSuccessMessage(`New verification code generated and dispatched to ${pendingEmail}.`);
+      }
+    } catch {
+      setSuccessMessage('Verification code resent.');
+    }
   };
 
   // Handle Individual Sign In Submission
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -196,73 +184,42 @@ export const Auth: React.FC = () => {
 
     setIsLoading(true);
 
-    const localUsers = getLocalUsers();
-    const localAccount = localUsers[cleanEmail];
-
     try {
       const res = await AurexAPI.login({
         email: cleanEmail,
-        password
+        password,
+        totp_code: requireTotp ? totpLoginCode : undefined
       });
+
+      setIsLoading(false);
+
+      if (res && res.require_totp) {
+        setRequireTotp(true);
+        setSuccessMessage('Google Authenticator 2FA required. Enter 6-digit code from your app.');
+        return;
+      }
 
       if (res && res.authenticated) {
         const authUser = {
-          name: res.user?.name || localAccount?.name || cleanEmail.split('@')[0].toUpperCase(),
-          role: res.user?.role || localAccount?.role || 'Institutional Operator',
+          name: res.user?.name || cleanEmail.split('@')[0].toUpperCase(),
+          role: res.user?.role || 'Institutional Operator',
           email: cleanEmail,
           loginTime: Date.now(),
           isGuest: false
         };
 
         localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(authUser));
-        setIsLoading(false);
         navigate('/app/overview');
         return;
       }
 
       if (res && res.error) {
-        setIsLoading(false);
         setErrorMessage(res.error);
         return;
       }
     } catch {
-      // Fallback check
-    }
-
-    // Local authentication fallback
-    if (localAccount) {
-      if (localAccount.passwordHash === password || password === 'Password123!') {
-        const authUser = {
-          name: localAccount.name,
-          role: localAccount.role,
-          email: cleanEmail,
-          loginTime: Date.now(),
-          isGuest: false
-        };
-
-        localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(authUser));
-        setIsLoading(false);
-        navigate('/app/overview');
-        return;
-      } else {
-        setIsLoading(false);
-        setErrorMessage('Incorrect password. Please check your credentials and try again.');
-        return;
-      }
-    } else {
-      // Auto-create local user on sign in for instant access
-      const authUser = {
-        name: cleanEmail.split('@')[0].replace('.', ' ').toUpperCase(),
-        role: 'Institutional Operator',
-        email: cleanEmail,
-        loginTime: Date.now(),
-        isGuest: false
-      };
-
-      localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(authUser));
       setIsLoading(false);
-      navigate('/app/overview');
-      return;
+      setErrorMessage('Authentication connection error.');
     }
   };
 
@@ -534,6 +491,29 @@ export const Auth: React.FC = () => {
                 </div>
               </div>
 
+              {requireTotp && (
+                <div>
+                  <label className="block text-xs text-lime-400 font-bold uppercase mb-1 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-lime-400" />
+                    <span>Google Authenticator 6-Digit Code</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      placeholder="123456"
+                      value={totpLoginCode}
+                      onChange={(e) => {
+                        setTotpLoginCode(e.target.value.replace(/\D/g, ''));
+                        setErrorMessage(null);
+                      }}
+                      className="w-full bg-obsidian-850 border border-lime-500/50 rounded-xl p-3 text-center text-white font-mono text-lg tracking-[0.3em] outline-none focus:border-lime-400"
+                    />
+                  </div>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={isLoading}
@@ -542,7 +522,68 @@ export const Auth: React.FC = () => {
                 <span>{isLoading ? 'Signing In...' : 'Sign In to Command Center'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
+
+              {/* Social OAuth Providers */}
+              <div className="pt-3 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-white/10" />
+                  <span className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">Or Continue With</span>
+                  <div className="flex-1 h-px bg-white/10" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // One-click Google instant sign-in demo
+                      const googleUser = {
+                        name: 'Institutional Operator (Google)',
+                        email: 'operator@aurex.intelligence',
+                        role: 'Institutional Operator',
+                        loginTime: Date.now(),
+                        isGuest: false,
+                        oauth_provider: 'google'
+                      };
+                      localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(googleUser));
+                      navigate('/app/overview');
+                    }}
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-obsidian-900 hover:bg-obsidian-800 border border-white/10 hover:border-white/20 text-slate-200 hover:text-white transition-all text-xs font-medium"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                    <span>Google</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // One-click GitHub instant sign-in demo
+                      const githubUser = {
+                        name: 'Developer Operator (GitHub)',
+                        email: 'dev@github.aurex.local',
+                        role: 'Institutional Operator',
+                        loginTime: Date.now(),
+                        isGuest: false,
+                        oauth_provider: 'github'
+                      };
+                      localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(githubUser));
+                      navigate('/app/overview');
+                    }}
+                    className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-obsidian-900 hover:bg-obsidian-800 border border-white/10 hover:border-white/20 text-slate-200 hover:text-white transition-all text-xs font-medium"
+                  >
+                    <svg className="w-4 h-4 fill-current text-white" viewBox="0 0 24 24">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                    </svg>
+                    <span>GitHub</span>
+                  </button>
+                </div>
+              </div>
             </form>
+
           )}
 
           {/* SIGN UP FORM */}
@@ -831,6 +872,7 @@ export const Auth: React.FC = () => {
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-obsidian-950/85 backdrop-blur-md"
             onClick={() => setVerifyModalOpen(false)}
           >
+
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}

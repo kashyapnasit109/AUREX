@@ -1,0 +1,73 @@
+{
+  "catalog_name": "AUREX Enterprise Product Catalog",
+  "last_updated": "2025-08-15",
+  "categories": ["Audio", "Wearables", "Smart Home", "Enterprise Hardware"],
+  "products": [
+    {
+      "sku": "SKU-AUDIO-9000",
+      "name": "AUREX Apex Studio Wireless Headphones",
+      "category": "Audio",
+      "brand": "AUREX Audio Systems",
+      "price": 349.99,
+      "inventory": 1420,
+      "description": "Premium wireless over-ear headphones with Active Hybrid ANC, 48-hour battery life, and Titanium Driver Enclosure. Industry-leading noise cancellation score of 99/100.",
+      "key_features": ["Active Hybrid ANC", "48h Battery", "Titanium Driver Enclosure", "Bluetooth 5.3", "Hi-Res Audio Certified"],
+      "ratings": {"anc_isolation": 99, "battery_efficiency": 95, "weight_ergonomics": 94}
+    },
+    {
+      "sku": "SKU-AUDIO-8500",
+      "name": "AUREX Voyager Pro ANC Headset",
+      "category": "Audio",
+      "brand": "AUREX Audio Systems",
+      "price": 279.99,
+      "inventory": 840,
+      "description": "Ultra-lightweight carbon frame headset with quad microphones and premium ANC. Perfect for business travel and remote work.",
+      "key_features": ["Ultra-lightweight Carbon Frame", "Quad Microphones", "ANC", "36h Battery", "Multipoint Connection"],
+      "ratings": {"anc_isolation": 94, "battery_efficiency": 92, "weight_ergonomics": 96}
+    },
+    {
+      "sku": "SKU-AUDIO-7000",
+      "name": "AUREX Clarity ANC Earbuds",
+      "category": "Audio",
+      "brand": "AUREX Audio Systems",
+      "price": 199.99,
+      "inventory": 2150,
+      "description": "IPX8 waterproof true wireless earbuds with pocket Qi wireless charging case. Great for sports and everyday use.",
+      "key_features": ["IPX8 Waterproof", "Qi Wireless Charging Case", "ANC", "28h Total Battery", "Transparency Mode"],
+      "ratings": {"anc_isolation": 89, "battery_efficiency": 88, "weight_ergonomics": 98}
+    },
+    {
+      "sku": "SKU-AUDIO-6000",
+      "name": "AUREX FlightLite Active Headphones",
+      "category": "Audio",
+      "brand": "AUREX Audio Systems",
+      "price": 149.99,
+      "inventory": 3100,
+      "description": "Budget-friendly over-ear headphones with 35-hour fast-charge battery and memory foam acoustic seal. Great value for travel.",
+      "key_features": ["35h Fast-Charge Battery", "Memory Foam Acoustic Seal", "ANC", "Foldable Design"],
+      "ratings": {"anc_isolation": 86, "battery_efficiency": 85, "weight_ergonomics": 92}
+    },
+    {
+      "sku": "SKU-WEAR-5000",
+      "name": "AUREX Pulse Pro Smartwatch",
+      "category": "Wearables",
+      "brand": "AUREX Wearables",
+      "price": 399.99,
+      "inventory": 650,
+      "description": "Advanced health monitoring smartwatch with ECG, SpO2, body temperature tracking, and 7-day battery life. AMOLED display with always-on mode.",
+      "key_features": ["ECG Monitor", "SpO2 Tracking", "7-Day Battery", "AMOLED Always-On", "GPS + GLONASS"],
+      "ratings": {"health_accuracy": 97, "battery_efficiency": 93, "build_quality": 95}
+    },
+    {
+      "sku": "SKU-HOME-3000",
+      "name": "AUREX Hub360 Smart Home Controller",
+      "category": "Smart Home",
+      "brand": "AUREX Smart Systems",
+      "price": 249.99,
+      "inventory": 1200,
+      "description": "Central smart home hub supporting Zigbee, Z-Wave, Thread, and Matter protocols. Voice control via Alexa and Google Assistant integration.",
+      "key_features": ["Multi-Protocol Support", "Voice Control", "Matter Compatible", "Thread Border Router", "Local Processing"],
+      "ratings": {"connectivity": 96, "compatibility": 94, "reliability": 97}
+    }
+  ]
+}

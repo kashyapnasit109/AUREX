@@ -11,6 +11,8 @@ import {
   Zap,
   ShieldCheck,
   ArrowRight,
+  TrendingUp,
+
 } from 'lucide-react';
 import {
   AreaChart,
@@ -240,8 +242,9 @@ export const Overview: React.FC = () => {
             </div>
             <div>
               <div className="text-slate-400 text-xs">Execution Latency</div>
-              <div className="text-cyan-400 font-bold text-sm mt-0.5">0.42 ms</div>
+              <div className="text-cyan-400 font-bold text-sm mt-0.5">Real-Time</div>
             </div>
+
           </div>
         </motion.div>
 
@@ -297,15 +300,102 @@ export const Overview: React.FC = () => {
             </div>
 
             <Link
-              to="/app/datamart"
-              className="mt-5 w-full text-center py-3 rounded-xl bg-obsidian-800 hover:bg-obsidian-750 border border-white/10 text-white text-xs transition-all flex items-center justify-center gap-2 font-sans font-bold shadow-md hover:border-lime-500/40"
+              to="/app/query-studio"
+              className="mt-5 w-full text-center py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-obsidian-950 text-xs transition-all flex items-center justify-center gap-2 font-sans font-bold shadow-lg"
             >
-              <span>View All 12 DataMart Insights</span>
-              <ArrowRight className="w-4 h-4 text-lime-400" />
+              <span>Open Query Studio & Pipeline</span>
+              <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* Unified Analytics & Capabilities Section (Matching Screenshot 1 & 3) */}
+      <div className="rounded-3xl bg-obsidian-850 border border-white/10 p-6 md:p-8 space-y-6 shadow-2xl">
+        <div className="text-center max-w-3xl mx-auto space-y-2">
+          <span className="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-mono font-bold uppercase tracking-wider">
+            Enterprise Architecture
+          </span>
+          <h2 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight">
+            Unified Analytics & Intelligence Capabilities
+          </h2>
+          <p className="text-slate-400 text-xs leading-relaxed">
+            Engineered for quantitative research, business analytics, and generative decision-making in a single governed pipeline.
+          </p>
+        </div>
+
+        {/* 8 Core Capability Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-sans">
+          <div className="p-4 rounded-2xl bg-obsidian-950 border border-white/5 space-y-2 hover:border-cyan-400/30 transition-all">
+            <div className="flex items-center gap-2 text-cyan-400 font-bold">
+              <TrendingUp className="w-4 h-4" />
+              <span>Quantitative Backtesting</span>
+            </div>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              Run historical strategy simulations with bias-aware execution and drawdown benchmark comparisons.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-obsidian-950 border border-white/5 space-y-2 hover:border-emerald-400/30 transition-all">
+            <div className="flex items-center gap-2 text-emerald-400 font-bold">
+              <Database className="w-4 h-4" />
+              <span>DataMart SQL Analytics</span>
+            </div>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              Transform raw transactional datasets into industrial-grade BI powered by DuckDB analytical processing.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-obsidian-950 border border-white/5 space-y-2 hover:border-lime-400/30 transition-all">
+            <div className="flex items-center gap-2 text-lime-400 font-bold">
+              <Sparkles className="w-4 h-4" />
+              <span>Retail AI Assistant</span>
+            </div>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              Query enterprise datasets in natural language and receive dataset-aware, explainable recommendations.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-obsidian-950 border border-white/5 space-y-2 hover:border-purple-400/30 transition-all">
+            <div className="flex items-center gap-2 text-purple-400 font-bold">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Zero-Bias Quarantine</span>
+            </div>
+            <p className="text-slate-400 text-[11px] leading-relaxed">
+              Ground executive and operational decisions in reproducible, auditable dataset evidence.
+            </p>
+          </div>
+        </div>
+
+        {/* Quick Actions Router */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-white/10 text-xs">
+          <Link
+            to="/app/query-studio"
+            className="p-3 rounded-xl bg-obsidian-900 border border-white/5 hover:border-cyan-400/40 text-center font-bold text-cyan-300 hover:text-white transition-all"
+          >
+            ⚡ Open Query Builder
+          </Link>
+          <Link
+            to="/app/data"
+            className="p-3 rounded-xl bg-obsidian-900 border border-white/5 hover:border-purple-400/40 text-center font-bold text-purple-300 hover:text-white transition-all"
+          >
+            📦 Ingest Datasets
+          </Link>
+          <Link
+            to="/app/quant"
+            className="p-3 rounded-xl bg-obsidian-900 border border-white/5 hover:border-amber-400/40 text-center font-bold text-amber-300 hover:text-white transition-all"
+          >
+            📈 Run Backtest
+          </Link>
+          <Link
+            to="/app/aiden"
+            className="p-3 rounded-xl bg-obsidian-900 border border-white/5 hover:border-lime-400/40 text-center font-bold text-lime-300 hover:text-white transition-all"
+          >
+            💬 Consult Aiden AI
+          </Link>
         </div>
       </div>
     </div>
   );
 };
+

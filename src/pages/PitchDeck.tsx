@@ -110,8 +110,9 @@ export const PitchDeck: React.FC = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-mono">
           <div className="p-5 rounded-2xl bg-obsidian-950 border border-white/10 text-center space-y-2">
             <div className="text-[10px] text-slate-400 uppercase">Engine Speed</div>
-            <div className="text-3xl font-bold text-lime-400">0.42ms</div>
+            <div className="text-3xl font-bold text-lime-400">Sub-Second</div>
             <div className="text-[10px] text-slate-500">FastAPI + DuckDB</div>
+
           </div>
           <div className="p-5 rounded-2xl bg-obsidian-950 border border-white/10 text-center space-y-2">
             <div className="text-[10px] text-slate-400 uppercase">Records Processed</div>
@@ -162,39 +163,6 @@ export const PitchDeck: React.FC = () => {
               <p className="text-[10px] text-slate-400 font-mono">{m.desc}</p>
             </button>
           ))}
-        </div>
-      )
-    },
-    {
-      id: 'slide-5',
-      tag: 'IMPACT & BUSINESS ROI',
-      title: 'Enterprise Impact & Financial Valuation',
-      subtitle: 'Quantifiable returns across supply chain, inventory, and automated decisioning.',
-      content: (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-sans">
-          <div className="p-6 rounded-2xl bg-obsidian-950/80 border border-emerald-500/30 space-y-3">
-            <span className="text-xs font-mono text-emerald-400 font-bold uppercase">Revenue Protection</span>
-            <div className="text-3xl font-bold font-mono text-white">+$3.82M ARR</div>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              Recovered through proactive APAC transit bottleneck re-allocation and mid-market renewal expansion.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-obsidian-950/80 border border-cyan-500/30 space-y-3">
-            <span className="text-xs font-mono text-cyan-400 font-bold uppercase">Decision Velocity</span>
-            <div className="text-3xl font-bold font-mono text-white">99.4% Faster</div>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              Automated z-score telemetry signals replace manual SQL aggregation and multi-week BI reporting cycles.
-            </p>
-          </div>
-
-          <div className="p-6 rounded-2xl bg-obsidian-950/80 border border-purple-500/30 space-y-3">
-            <span className="text-xs font-mono text-purple-400 font-bold uppercase">Audit Compliance</span>
-            <div className="text-3xl font-bold font-mono text-white">Zero Hallucinations</div>
-            <p className="text-slate-400 text-xs leading-relaxed">
-              100% of AI recommendations are cryptographically verified by SHA-256 data lineage signatures.
-            </p>
-          </div>
         </div>
       )
     }

@@ -115,9 +115,9 @@ class AidenMessage(BaseModel):
     timestamp: Optional[str] = None
 
 class ScoreDecomposition(BaseModel):
-    anc_isolation: int
-    battery_efficiency: int
-    weight_ergonomics: int
+    anc_isolation: int = 0
+    battery_efficiency: int = 0
+    weight_ergonomics: int = 0
 
 class ProductMatch(BaseModel):
     sku: str
@@ -139,10 +139,16 @@ class LineageTrace(BaseModel):
 class AidenChatRequest(BaseModel):
     messages: List[AidenMessage]
     user_context: Optional[Dict[str, Any]] = None
+    # Model selection fields
+    model_provider: Optional[str] = None  # "cloud", "local", "custom"
+    model_name: Optional[str] = None  # e.g. "claude-opus-4-8", "llama3.2"
+    custom_url: Optional[str] = None  # Custom API endpoint
+    custom_api_key: Optional[str] = None  # Custom API key
 
 class AidenChatResponse(BaseModel):
     message: str
     reasoning: List[str]
-    suggested_products: List[ProductMatch]
+    suggested_products: List[ProductMatch] = Field(default_factory=list)
     lineage_trace: LineageTrace
     zero_hallucination_verified: bool
+    model_used: Optional[str] = None  # Which model actually answered

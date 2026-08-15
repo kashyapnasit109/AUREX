@@ -27,7 +27,7 @@ $$\text{DATA} \longrightarrow \text{ANALYSIS} \longrightarrow \text{INTELLIGENCE
 ```
                                ┌──────────────────────────────────────────┐
                                │        AUREX ENTERPRISE CORE             │
-                               │     FastAPI + DuckDB Engine (0.42ms)     │
+                               │     FastAPI + DuckDB Engine (Real-Time)  │
                                └────────────────────┬─────────────────────┘
                                                     │
          ┌──────────────────────────────────────────┼──────────────────────────────────────────┐
@@ -65,7 +65,8 @@ $$\text{DATA} \longrightarrow \text{ANALYSIS} \longrightarrow \text{INTELLIGENCE
 - **Cross-Domain Telemetry**: Live event pipeline connecting DataMart latency spikes $\rightarrow$ Aiden AI proactive restocking $\rightarrow$ Quant walk-forward risk alignment.
 
 ### Module 2: Standalone Insight Engine (`/app/insights`)
-- **Compute-Then-Narrate Signals**: Every insight is mathematically derived from DuckDB aggregates with zero hallucination.
+- **Compute-Then-Narrate Signals**: Every insight is mathematically derived from DuckDB aggregates with RAG-grounded verification.
+
 - **Interactive Action Bar**: Triggers `[View Evidence]`, `[Ask AUREX]`, and `[Execute Action]` directly from insight cards.
 
 ### Module 3: Quant Studio (`/app/quant`)

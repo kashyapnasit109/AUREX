@@ -6,7 +6,8 @@
     "role": "Executive Operator",
     "is_verified": true,
     "verification_code": "123456",
-    "registered_at": 1786766342
+    "registered_at": 1786766342,
+    "totp_secret_pending": "LBPAZ76N7Y3SQHWBSE7XZ3NKZHU3N5TN"
   },
   "hitanshpparikh@gmail.com": {
     "name": "Hitansh",
@@ -15,6 +16,40 @@
     "role": "Institutional Operator",
     "is_verified": true,
     "verification_code": "199485",
-    "registered_at": 1786766342
+    "registered_at": 1786766342,
+    "totp_secret_pending": "B3UXYBPL46NBD5MXSUNOHZ7M7ASBYKK7"
+  },
+  "hitanshpppparikh@gmail.com": {
+    "name": "hitansh parikh",
+    "email": "hitanshpppparikh@gmail.com",
+    "password_hash": "ce2744b2f2f8f927488a1fdb202a2e08af449091bc727aaa2b24493d1892fe6a",
+    "role": "Institutional Operator",
+    "is_verified": true,
+    "verification_code": "151551",
+    "totp_enabled": true,
+    "registered_at": 1786769298,
+    "totp_secret": "PNZAWKMCZZGCAWZEOVPH3HDA7IT2JDLV"
+  },
+  "test@aurex.com": {
+    "name": "Test User",
+    "email": "test@aurex.com",
+    "password_hash": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+    "role": "Institutional Operator",
+    "is_verified": true,
+    "verification_code": "296223",
+    "totp_enabled": false,
+    "registered_at": 1786769780
+  },
+  "contact@hitanshparikh.com": {
+    "name": "Contact (HITANSHPARIKH)",
+    "email": "contact@hitanshparikh.com",
+    "password_hash": "ce2744b2f2f8f927488a1fdb202a2e08af449091bc727aaa2b24493d1892fe6a",
+    "role": "Organization Enterprise Admin (HITANSHPARIKH)",
+    "org_id": "ORG-HITANSHPARIKH",
+    "is_verified": true,
+    "verification_code": "000000",
+    "totp_enabled": true,
+    "registered_at": 1786770874,
+    "totp_secret": "BVWQFLN2A5E5LS5T5Z7LJRIJGFABOUY6"
   }
 }

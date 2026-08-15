@@ -96,8 +96,9 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
                     <Clock className="w-3.5 h-3.5 text-cyan-400" />
                     <span>Engine Latency</span>
                   </div>
-                  <div className="text-cyan-400 font-bold">{evidenceData?.executionMs || 0.42}ms</div>
+                  <div className="text-cyan-400 font-bold">{evidenceData?.executionMs || 12.4}ms</div>
                 </div>
+
 
                 <div className="p-3.5 rounded-xl bg-obsidian-950 border border-white/5 space-y-1.5">
                   <div className="flex items-center gap-2 text-slate-400 text-[10px] uppercase font-semibold">

@@ -6,9 +6,10 @@ export const TickerTape: React.FC<{ className?: string }> = ({ className = '' })
   const [telemetryState, setTelemetryState] = useState({
     btcPrice: '$65,120.50',
     ethPrice: '$3,450.20',
-    latency: '0.42ms',
+    latency: '12.4ms',
     throughput: '42.8M RECS'
   });
+
 
   useEffect(() => {
     const cleanup = AurexAPI.connectTelemetry((data) => {

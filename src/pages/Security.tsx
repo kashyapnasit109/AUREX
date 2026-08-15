@@ -32,17 +32,18 @@ export const Security: React.FC = () => {
     },
     {
       layer: 'Layer 03',
-      title: 'Zero-Hallucination Grounding Barrier',
+      title: 'RAG Grounded Retrieval Barrier',
       icon: <Database className="w-6 h-6 text-lime-400" />,
       desc: 'AI recommendations operate strictly on structured catalog, pricing elasticity, and inventory graphs. If records do not verify, the model gracefully abstains.',
       badge: 'Deterministic Retrieval',
     },
     {
       layer: 'Layer 04',
-      title: 'Distributed Sub-Millisecond Core',
+      title: 'High-Throughput Analytics Core',
       icon: <Cpu className="w-6 h-6 text-amber-400" />,
-      desc: 'C++ / Rust numerical engine executing 1.84M operations per second with hardware-enforced memory isolation and zero shared state contention.',
-      badge: '0.42ms Runtime',
+      desc: 'DuckDB and Python vectorized engines executing queries with hardware-enforced memory isolation and zero shared state contention.',
+      badge: 'Real-Time Runtime',
+
     },
     {
       layer: 'Layer 05',

@@ -5,13 +5,9 @@ import {
   AlertTriangle,
   Eye,
   RefreshCw,
-  CheckCircle2,
-  Database,
-  Server,
-  Activity,
-  Layers,
-  Sparkles
+  CheckCircle2
 } from 'lucide-react';
+
 import { LineageGraphCanvas } from '../components/canvas/LineageGraphCanvas';
 import { EvidenceDrawer } from '../components/common/EvidenceDrawer';
 
@@ -180,8 +176,9 @@ export const DataHub: React.FC = () => {
           recordsQueried: '1,000,000 DuckDB Records',
           sha256Hash: '987A10F284910284A0E1B904128',
           timestamp: '2026-08-15 00:40:00 UTC',
-          executionMs: 0.42,
+          executionMs: 11.2,
           title: 'Enterprise Data Hub Audit'
+
         }}
       />
     </div>

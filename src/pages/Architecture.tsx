@@ -3,9 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Cpu,
   Database,
-  Terminal,
   MessageSquare,
-  ShieldCheck,
   Zap,
   Sparkles,
   Layers,
@@ -13,21 +11,18 @@ import {
   Key,
   Table,
   CheckCircle2,
-  ArrowRight,
   Code2,
   Server,
   Lock,
   Activity,
-  ChevronRight,
   Info,
-  Radio,
   Share2,
-  Search,
   Sliders,
   Check,
   RefreshCw,
   Copy
 } from 'lucide-react';
+
 import { AurexLogo } from '../components/brand/AurexLogo';
 
 // Database Schema Table Definition
@@ -210,9 +205,10 @@ export const Architecture: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
             <div className="p-3.5 rounded-2xl bg-obsidian-850/80 border border-white/10 backdrop-blur-md">
               <div className="text-[11px] text-slate-400 font-sans uppercase font-medium">OLAP Latency</div>
-              <div className="text-xl font-mono font-bold text-lime-400 mt-0.5">&lt; 0.42 ms</div>
+              <div className="text-xl font-mono font-bold text-lime-400 mt-0.5">Sub-Second</div>
               <div className="text-[10px] text-slate-500">DuckDB In-Memory</div>
             </div>
+
             <div className="p-3.5 rounded-2xl bg-obsidian-850/80 border border-white/10 backdrop-blur-md">
               <div className="text-[11px] text-slate-400 font-sans uppercase font-medium">Look-Ahead Bias</div>
               <div className="text-xl font-mono font-bold text-cyan-400 mt-0.5">0.00 %</div>
@@ -412,8 +408,8 @@ export const Architecture: React.FC = () => {
                     <div className="h-full bg-lime-400 w-[70%]" title="In-Sample (70%)" />
                     <div className="h-full bg-cyan-400 w-[30%]" title="Out-of-Sample (30%)" />
                   </div>
-                  <div className="text-[11px] text-slate-400 pt-1">
-                    $$\text{Sharpe Ratio} = \frac{E[R_p - R_f]}{\sigma_p} \quad \text{evaluated strictly on Out-of-Sample } t > t_{\text{split}}$$
+                  <div className="text-[11px] text-slate-400 pt-1 font-mono">
+                    {'Sharpe Ratio = E[R_p - R_f] / σ_p (evaluated strictly on Out-of-Sample t > t_split)'}
                   </div>
                 </div>
               </div>
@@ -449,8 +445,8 @@ export const Architecture: React.FC = () => {
                   <div className="p-2.5 bg-obsidian-850 rounded-lg text-[11px] text-lime-400 break-all border border-white/5">
                     {sampleSha256}
                   </div>
-                  <div className="text-[11px] text-slate-400">
-                    $$\text{LineageHash} = \text{SHA256}(\text{Table} \parallel \text{SKUs} \parallel \text{Query} \parallel \text{Timestamp})$$
+                  <div className="text-[11px] text-slate-400 font-mono">
+                    {'LineageHash = SHA256(Table ∥ SKUs ∥ Query ∥ Timestamp)'}
                   </div>
                 </div>
               </div>
@@ -573,7 +569,7 @@ GROUP BY region HAVING z_score > 3.0;`}
                 <ul className="space-y-2.5 text-xs text-slate-300 font-sans">
                   <li className="flex items-start gap-2">
                     <span className="text-lime-400 mt-0.5">•</span>
-                    <span><strong>Unified Telemetry Pipeline:</strong> Seamless flow from DataMart analytics $\rightarrow$ Aiden AI recommendations $\rightarrow$ Quant Studio backtests.</span>
+                    <span><strong>Unified Telemetry Pipeline:</strong> Seamless flow from DataMart analytics &rarr; Aiden AI recommendations &rarr; Quant Studio backtests.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-lime-400 mt-0.5">•</span>
@@ -610,8 +606,9 @@ GROUP BY region HAVING z_score > 3.0;`}
               <div className="pt-2 flex flex-wrap gap-4 text-xs font-mono text-slate-300">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-obsidian-950 border border-white/10">
                   <CheckCircle2 className="w-4 h-4 text-lime-400" />
-                  <span>0.42ms DuckDB Processing</span>
+                  <span>Real-Time DuckDB Processing</span>
                 </div>
+
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-obsidian-950 border border-white/10">
                   <CheckCircle2 className="w-4 h-4 text-cyan-400" />
                   <span>100% Vector Grounded</span>
@@ -731,11 +728,12 @@ GROUP BY region HAVING z_score > 3.0;`}
                           <tr key={field.name} className="hover:bg-white/5 transition-colors">
                             <td className="p-3 font-bold text-slate-200">
                               <span className="flex items-center gap-1.5">
-                                {field.isPk && <Key className="w-3.5 h-3.5 text-amber-400" title="Primary Key" />}
-                                {field.isFk && <Share2 className="w-3.5 h-3.5 text-cyan-400" title="Foreign Key" />}
-                                {field.isHash && <Lock className="w-3.5 h-3.5 text-lime-400" title="SHA-256 Hash" />}
+                                {field.isPk && <span title="Primary Key"><Key className="w-3.5 h-3.5 text-amber-400" /></span>}
+                                {field.isFk && <span title="Foreign Key"><Share2 className="w-3.5 h-3.5 text-cyan-400" /></span>}
+                                {field.isHash && <span title="SHA-256 Hash"><Lock className="w-3.5 h-3.5 text-lime-400" /></span>}
                                 <span>{field.name}</span>
                               </span>
+
                             </td>
                             <td className="p-3 text-lime-400 text-[11px]">{field.type}</td>
                             <td className="p-3">

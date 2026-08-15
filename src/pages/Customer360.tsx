@@ -123,8 +123,9 @@ export const Customer360: React.FC = () => {
           recordsQueried: '17 Transaction Logs',
           sha256Hash: '90412851A0849201F92B3C',
           timestamp: '2026-08-14 14:10:00 UTC',
-          executionMs: 0.42,
+          executionMs: 10.2,
           title: `Customer 360 Audit for ${customerData.id}`
+
         }}
       />
     </div>

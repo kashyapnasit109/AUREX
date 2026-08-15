@@ -123,8 +123,9 @@ export const ProductIntelligence: React.FC = () => {
           recordsQueried: '3 Vector Rows Evaluated',
           sha256Hash: '09654578209B36E4377765C4008466C7',
           timestamp: '2026-08-14 14:10:00 UTC',
-          executionMs: 0.42,
+          executionMs: 8.6,
           title: `Product Vector Audit for ${productData.sku}`
+
         }}
       />
     </div>

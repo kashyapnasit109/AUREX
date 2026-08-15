@@ -7,13 +7,9 @@ import {
   Bot,
   Play,
   CheckCircle2,
-  Send,
-  Clock,
-  ArrowRight,
-  Sparkles,
-  Layers,
   Radio
 } from 'lucide-react';
+
 import { EvidenceDrawer } from '../components/common/EvidenceDrawer';
 import { useNavigate } from 'react-router-dom';
 
@@ -121,8 +117,9 @@ export const InsightEngine: React.FC = () => {
             Autonomous Confidence-Rated Business Signals
           </h1>
           <p className="text-slate-300 font-sans text-sm mt-0.5">
-            Every insight is mathematically derived from DuckDB aggregates with zero hallucination and verifiable SHA-256 data lineage.
+            Every insight is mathematically derived from DuckDB aggregates with RAG-grounded verification and verifiable SHA-256 data lineage.
           </p>
+
         </div>
       </div>
 
@@ -317,8 +314,9 @@ export const InsightEngine: React.FC = () => {
           recordsQueried: selectedInsight.records,
           sha256Hash: selectedInsight.hash,
           timestamp: '2026-08-15 00:40:00 UTC',
-          executionMs: 0.42,
+          executionMs: 14.8,
           title: selectedInsight.title
+
         } : null}
       />
     </div>

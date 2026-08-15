@@ -40,6 +40,54 @@ class Settings:
     @property
     def SEEK_AI_MODEL(self) -> str:
         reload_env()
-        return os.getenv("SEEK_AI_MODEL", "claude-opus-5").strip()
+        return os.getenv("SEEK_AI_MODEL", "claude-opus-4-8").strip()
+
+    @property
+    def SMTP_SERVER(self) -> str:
+        return os.getenv("SMTP_SERVER", "smtp.gmail.com").strip()
+
+    @property
+    def SMTP_PORT(self) -> int:
+        try:
+            return int(os.getenv("SMTP_PORT", "587"))
+        except ValueError:
+            return 587
+
+    @property
+    def SMTP_EMAIL(self) -> str:
+        reload_env()
+        return os.getenv("SMTP_EMAIL", "").strip()
+
+    @property
+    def SMTP_PASSWORD(self) -> str:
+        reload_env()
+        return os.getenv("SMTP_PASSWORD", "").strip()
+
+    # LM Studio (Local AI Model) Settings
+    @property
+    def LM_STUDIO_URL(self) -> str:
+        reload_env()
+        return os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1").strip()
+
+    @property
+    def LM_STUDIO_MODEL(self) -> str:
+        reload_env()
+        return os.getenv("LM_STUDIO_MODEL", "default").strip()
+
+    # OAuth Settings
+    @property
+    def GOOGLE_CLIENT_ID(self) -> str:
+        reload_env()
+        return os.getenv("GOOGLE_CLIENT_ID", "").strip()
+
+    @property
+    def GITHUB_CLIENT_ID(self) -> str:
+        reload_env()
+        return os.getenv("GITHUB_CLIENT_ID", "").strip()
+
+    @property
+    def GITHUB_CLIENT_SECRET(self) -> str:
+        reload_env()
+        return os.getenv("GITHUB_CLIENT_SECRET", "").strip()
 
 settings = Settings()

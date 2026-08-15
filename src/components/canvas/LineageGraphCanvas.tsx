@@ -5,13 +5,9 @@ import {
   Server,
   Cpu,
   ShieldCheck,
-  CheckCircle2,
-  Terminal,
-  Activity,
-  Layers,
-  ArrowRight,
-  Sparkles
+  Terminal
 } from 'lucide-react';
+
 
 export const LineageGraphCanvas: React.FC<{ onNodeSelect?: (node: any) => void }> = ({ onNodeSelect }) => {
   const [activeNodeId, setActiveNodeId] = useState('duckdb_olap');
@@ -38,9 +34,10 @@ export const LineageGraphCanvas: React.FC<{ onNodeSelect?: (node: any) => void }
       name: 'DUCKDB OLAP',
       sub: 'In-Memory Engine',
       icon: <Server className="w-5 h-5 text-cyan-400" />,
-      status: '0.42ms Query',
+      status: 'Sub-Second Query',
       records: '1,000,000 Rows Queried',
-      latency: '0.42ms Aggregation Latency',
+      latency: 'Sub-Second Aggregation Latency',
+
       engine: 'DuckDB C++ Vectorized Core v1.1',
       hash: 'SHA256-OLAP-90412851A0',
       upstream: 'TimescaleDB & Raw Ingestion Staging',

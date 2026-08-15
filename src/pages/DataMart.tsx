@@ -11,9 +11,9 @@ import {
   RefreshCw,
   ArrowUpRight,
   ShieldCheck,
-  CheckCircle2,
-  Filter
+  CheckCircle2
 } from 'lucide-react';
+
 import {
   BarChart,
   Bar,
@@ -95,7 +95,8 @@ export const DataMart: React.FC = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshNotification, setRefreshNotification] = useState<string | null>(null);
   const [regionalData, setRegionalData] = useState(mockRegionalMetrics);
-  const [insights, setInsights] = useState(mockAutonomousInsights);
+  const [insights] = useState(mockAutonomousInsights);
+
 
   const [summaryStats, setSummaryStats] = useState({
     grossVolume: '$58,800,000',

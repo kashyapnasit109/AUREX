@@ -35,9 +35,10 @@ async def websocket_telemetry(websocket: WebSocket):
         # Initial handshake message
         await websocket.send_json({
             "type": "SYSTEM_INIT",
-            "message": "Connected to AUREX Distributed Telemetry Engine (0.42ms)",
+            "message": "Connected to AUREX Distributed Telemetry Engine (Real-Time)",
             "timestamp": time.time()
         })
+
         
         while True:
             # Stream simulated telemetry ticks & broadcast cross-module events

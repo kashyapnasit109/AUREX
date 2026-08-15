@@ -114,8 +114,9 @@ export const Landing: React.FC = () => {
               </div>
               <span className="text-white/20">•</span>
               <div className="text-slate-300 text-xs">
-                Fusing 3 Data Streams in <span className="text-cyan-400 font-mono font-semibold">0.42ms</span>
+                Fusing 3 Data Streams in <span className="text-cyan-400 font-mono font-semibold">Real-Time</span>
               </div>
+
             </div>
           </motion.div>
         </div>
@@ -334,9 +335,10 @@ export const Landing: React.FC = () => {
             </p>
             <div className="space-y-1 text-xs font-mono text-slate-300 bg-obsidian-950 p-3 rounded-xl w-full border border-white/5">
               <div>• Zero Look-Ahead Isolation</div>
-              <div>• 0.42ms Inference Latency</div>
+              <div>• Real-Time Inference Latency</div>
               <div>• Verifiable Data Lineage</div>
             </div>
+
           </div>
 
           {/* Output Intelligence Surfaces */}

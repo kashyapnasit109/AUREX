@@ -26,6 +26,13 @@ export interface AidenChatMessage {
   content: string;
 }
 
+export interface AidenModelConfig {
+  provider: 'cloud' | 'local' | 'custom';
+  model_name: string;
+  custom_url?: string;
+  custom_api_key?: string;
+}
+
 export class AurexAPI {
   /**
    * Register new user account (returns pending verification state with code)
@@ -87,9 +94,9 @@ export class AurexAPI {
   }
 
   /**
-   * Log in with Email and Password (requires verified email)
+   * Log in with Email and Password (requires verified email & optional 2FA totp_code)
    */
-  static async login(params: { email: string; password: string }) {
+  static async login(params: { email: string; password: string; totp_code?: string }) {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
@@ -104,6 +111,151 @@ export class AurexAPI {
     } catch (err: any) {
       console.warn('[AUREX API] Login fallback:', err);
       return { error: err.message || 'Network connection failed' };
+    }
+  }
+
+  /**
+   * Setup Google Authenticator 2FA (Generates QR Code & Base32 secret)
+   */
+  static async setup2FA(email: string) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/2fa/setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || '2FA Setup failed');
+      return data;
+    } catch (err: any) {
+      console.warn('[AUREX API] 2FA Setup error:', err);
+      return { error: err.message || 'Failed to setup 2FA' };
+    }
+  }
+
+  /**
+   * Verify and activate 6-digit Google Authenticator code
+   */
+  static async verify2FA(params: { email: string; code: string }) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/2fa/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || '2FA Verification failed');
+      return data;
+    } catch (err: any) {
+      console.warn('[AUREX API] 2FA Verify error:', err);
+      return { error: err.message || 'Failed to verify 2FA code' };
+    }
+  }
+
+  /**
+   * Check if 2FA is already enabled for a user
+   */
+  static async get2FAStatus(email: string) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/2fa/status?email=${encodeURIComponent(email)}`);
+      if (!res.ok) throw new Error('2FA status check failed');
+      return await res.json();
+    } catch (err: any) {
+      console.warn('[AUREX API] 2FA status error:', err);
+      return { enabled: false, exists: false };
+    }
+  }
+
+  /**
+   * Google OAuth — send ID token from Google Identity Services
+   */
+  static async oauthGoogle(idToken: string) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/oauth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_token: idToken }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.detail || 'Google OAuth failed' };
+      return data;
+    } catch (err: any) {
+      return { error: err.message || 'Google OAuth network error' };
+    }
+  }
+
+  /**
+   * GitHub OAuth — exchange authorization code for user info
+   */
+  static async oauthGithub(code: string) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/oauth/github`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.detail || 'GitHub OAuth failed' };
+      return data;
+    } catch (err: any) {
+      return { error: err.message || 'GitHub OAuth network error' };
+    }
+  }
+
+  /**
+   * Test LM Studio local AI connection at http://localhost:1234/v1
+   */
+  static async testLMStudioConnection(url: string = 'http://localhost:1234/v1') {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/test-lmstudio?url=${encodeURIComponent(url)}`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('LM Studio test connection failed');
+      return await res.json();
+    } catch (err: any) {
+      return { connected: false, error: err.message };
+    }
+  }
+
+  /**
+   * Backward compatible alias
+   */
+  static async testOllamaConnection(url: string = 'http://localhost:1234/v1') {
+    return this.testLMStudioConnection(url);
+  }
+
+
+
+  /**
+   * Get Custom Organization Data
+   */
+  static async getOrgData() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/organization/data`);
+      if (!res.ok) throw new Error('Failed to fetch org data');
+      return await res.json();
+    } catch (err: any) {
+      console.warn('[AUREX API] getOrgData error:', err);
+      return null;
+    }
+  }
+
+  /**
+   * Update & Upload Custom Organization Data for AI Personalization
+   */
+  static async updateOrgData(payload: any) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/organization/data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Failed to update org data');
+      return data;
+    } catch (err: any) {
+      console.warn('[AUREX API] updateOrgData error:', err);
+      return { error: err.message || 'Failed to save organization data' };
     }
   }
 
@@ -172,7 +324,7 @@ export class AurexAPI {
   }
 
   /**
-   * Execute Natural Language DuckDB SQL Query via SeekAI (claude-opus-5)
+   * Execute Natural Language DuckDB SQL Query via SeekAI
    */
   static async runNLQuery(prompt: string) {
     try {
@@ -190,14 +342,25 @@ export class AurexAPI {
   }
 
   /**
-   * Grounded Aiden Retail AI Chat with SHA-256 Data Lineage
+   * Grounded Aiden AI Chat with RAG context & model selection
    */
-  static async sendAidenChat(messages: AidenChatMessage[]) {
+  static async sendAidenChat(
+    messages: AidenChatMessage[],
+    modelConfig?: AidenModelConfig
+  ) {
     try {
+      const body: any = { messages };
+      if (modelConfig) {
+        body.model_provider = modelConfig.provider;
+        body.model_name = modelConfig.model_name;
+        if (modelConfig.custom_url) body.custom_url = modelConfig.custom_url;
+        if (modelConfig.custom_api_key) body.custom_api_key = modelConfig.custom_api_key;
+      }
+
       const res = await fetch(`${API_BASE_URL}/aiden/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({ detail: `HTTP ${res.status} Error` }));

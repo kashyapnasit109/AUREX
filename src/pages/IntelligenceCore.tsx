@@ -9,12 +9,9 @@ import {
   Eye,
   CheckCircle2,
   RefreshCw,
-  ArrowRight,
-  Sparkles,
-  Terminal,
-  Cpu,
-  Layers
+  Terminal
 } from 'lucide-react';
+
 import { EvidenceDrawer } from '../components/common/EvidenceDrawer';
 import { RadarCanvas } from '../components/canvas/RadarCanvas';
 
@@ -32,7 +29,7 @@ export const IntelligenceCore: React.FC = () => {
       icon: <Database className="w-5 h-5 text-amber-400" />,
       desc: 'Sub-second OLAP scan across NA, EMEA, APAC, and LATAM transactional hubs.',
       engine: 'DuckDB In-Memory OLAP v1.1',
-      latency: '0.42ms',
+      latency: 'Real-Time',
       recordsEvaluated: '1,000,000 Transactions',
       status: 'Live & Ingested',
       formula: 'SUM(gross_revenue), AVG(latency_days) GROUP BY region',
@@ -46,7 +43,7 @@ export const IntelligenceCore: React.FC = () => {
       icon: <Activity className="w-5 h-5 text-cyan-400" />,
       desc: 'Statistical z-score spike detected in APAC fulfillment latency (+1.8 days).',
       engine: 'NumPy Vectorized Statistics Core',
-      latency: '0.68ms',
+      latency: 'Sub-Second',
       recordsEvaluated: '200,000 APAC Node Records',
       status: 'Spike Detected (98.6% Conf.)',
       formula: 'z = (latency_obs - μ_baseline) / σ_rolling = 1.70σ',
@@ -60,9 +57,10 @@ export const IntelligenceCore: React.FC = () => {
       icon: <Bot className="w-5 h-5 text-purple-400" />,
       desc: 'Evaluated 2,410 active catalog SKUs & generated proactive restocking plan.',
       engine: 'Aiden AI Vector RAG (DW_RETAIL)',
-      latency: '14.2ms',
+      latency: 'Grounded RAG',
       recordsEvaluated: '2,410 Catalog Vectors',
-      status: 'Verified (Zero Hallucination)',
+      status: 'Verified (RAG Grounded)',
+
       formula: 'Cosine_Similarity(q_vec, d_vec) = (q · d) / (||q|| ||d||)',
       query: 'SELECT sku, name, match_score FROM DW_RETAIL.CATALOG_MASTER ORDER BY cosine_distance(vec, target) LIMIT 3;',
       details: 'Calculates cosine similarity distance across multidimensional product attribute vectors grounded strictly in warehouse schema.'
@@ -90,7 +88,7 @@ export const IntelligenceCore: React.FC = () => {
     setSimulationStatus('Executing closed-loop telemetry convergence across 4 stages...');
     setTimeout(() => {
       setIsSimulating(false);
-      setSimulationStatus('✓ Telemetry Convergence Cycle Completed (Latency: 0.42ms • SHA-256: 09654578...)');
+      setSimulationStatus('✓ Telemetry Convergence Cycle Completed (Real-Time • SHA-256: 09654578...)');
       setTimeout(() => setSimulationStatus(null), 4000);
     }, 1200);
   };
@@ -157,8 +155,9 @@ export const IntelligenceCore: React.FC = () => {
           <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
             Live Cross-Domain Convergence Graph (Click Any Stage to Inspect)
           </span>
-          <span className="text-xs text-lime-400 font-mono font-semibold">0.42ms Engine Latency</span>
+          <span className="text-xs text-lime-400 font-mono font-semibold">Sub-Second Processing</span>
         </div>
+
 
         {/* 3D Volumetric Signal Radar Canvas */}
         <div className="w-full h-56 rounded-2xl bg-obsidian-950/90 border border-white/5 relative overflow-hidden flex items-center justify-center">
@@ -311,8 +310,9 @@ export const IntelligenceCore: React.FC = () => {
           recordsQueried: '1,000,000 DuckDB Records',
           sha256Hash: '09654578209b36e4377765c4008466c769f16ebed8490ecc4f444a4f3d34a73d',
           timestamp: '2026-08-15 00:40:00 UTC',
-          executionMs: 0.42,
+          executionMs: 12.4,
           title: 'Cross-Module Telemetry Pipeline Convergence'
+
         }}
       />
     </div>
