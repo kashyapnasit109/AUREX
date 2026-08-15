@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowUpRight, Menu, X } from 'lucide-react';
+import { ArrowUpRight, Menu, X, Sparkles } from 'lucide-react';
 import { AurexLogo } from '../brand/AurexLogo';
 
 export const Navbar: React.FC = () => {
@@ -45,6 +45,11 @@ export const Navbar: React.FC = () => {
 
         {/* Action Right */}
         <div className="flex items-center space-x-3 font-sans">
+          <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-pink-500/15 border border-purple-500/30 text-xs font-sans text-slate-300">
+            <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
+            <span className="tracking-tight text-[11px]">Crafted by <strong className="text-white font-semibold">HiVizStudios</strong></span>
+          </div>
+
           <Link
             to="/login"
             className="hidden sm:inline-flex text-xs text-slate-300 hover:text-white px-3 py-1.5 transition-colors font-medium"

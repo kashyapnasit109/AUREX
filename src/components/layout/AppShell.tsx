@@ -120,6 +120,12 @@ export const AppShell: React.FC = () => {
 
           {/* Clean Enterprise Status Telemetry */}
           <div className="flex items-center gap-3 text-xs font-sans">
+            {/* Crafted by HiVizStudios Branding */}
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-pink-500/15 border border-purple-500/30 text-xs font-sans text-slate-300">
+              <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
+              <span className="tracking-tight text-[11px]">Crafted by <strong className="text-white font-semibold">HiVizStudios</strong></span>
+            </div>
+
             {/* Pitch Deck Quick Button */}
             <Link
               to="/app/pitch"

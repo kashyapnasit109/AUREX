@@ -435,7 +435,7 @@ export const Landing: React.FC = () => {
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-between pt-8 border-t border-white/5 font-mono text-xs text-slate-400">
-          <div>© 2026 AUREX Cognitive Systems. All rights reserved.</div>
+          <div>© 2026 AUREX Cognitive Systems. All rights reserved. • <span className="text-slate-300 font-sans font-medium">Crafted by <strong className="text-white font-semibold">HiVizStudios</strong></span></div>
           <div className="flex gap-6 mt-4 sm:mt-0">
             <Link to="/security" className="hover:text-slate-200">Trust & Security</Link>
             <Link to="/login" className="hover:text-slate-200">Terminal Login</Link>

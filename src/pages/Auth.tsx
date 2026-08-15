@@ -15,7 +15,8 @@ import {
   Building2,
   Globe,
   Eye,
-  EyeOff
+  EyeOff,
+  Sparkles
 } from 'lucide-react';
 import { ParticleCore } from '../components/canvas/ParticleCore';
 import { AurexLogo } from '../components/brand/AurexLogo';
@@ -115,6 +116,19 @@ export const Auth: React.FC = () => {
 
     setIsLoading(true);
 
+    const autoLogin = (userName: string, userEmail: string) => {
+      const authUser = {
+        name: userName,
+        role: 'Institutional Operator',
+        email: userEmail,
+        loginTime: Date.now(),
+        isGuest: false
+      };
+      localStorage.setItem('AUREX_AUTH_USER', JSON.stringify(authUser));
+      setIsLoading(false);
+      navigate('/app/overview');
+    };
+
     try {
       // 1. Attempt API Sign Up
       await AurexAPI.signUp({
@@ -129,17 +143,14 @@ export const Auth: React.FC = () => {
         name: cleanName,
         email: cleanEmail,
         passwordHash: password,
-        isVerified: true, // TEMPORARILY DIRECTLY VERIFIED
+        isVerified: true,
         verificationCode: '000000',
         role: 'Institutional Operator'
       };
       saveLocalUsers(localUsers);
 
-      setIsLoading(false);
-      setMode('signin');
-      setEmail(cleanEmail);
-      setPassword('');
-      setSuccessMessage('Account created successfully! You may now sign in.');
+      // Auto-login and navigate immediately to app overview
+      autoLogin(cleanName, cleanEmail);
     } catch {
       // Local fallback
       const localUsers = getLocalUsers();
@@ -154,11 +165,8 @@ export const Auth: React.FC = () => {
       };
       saveLocalUsers(localUsers);
 
-      setIsLoading(false);
-      setMode('signin');
-      setEmail(cleanEmail);
-      setPassword('');
-      setSuccessMessage('Account created successfully! You may now sign in.');
+      // Auto-login and navigate immediately to app overview
+      autoLogin(cleanName, cleanEmail);
     }
   };
 
@@ -436,11 +444,17 @@ export const Auth: React.FC = () => {
 
           {/* Header Title */}
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs uppercase tracking-wider text-lime-400 bg-lime-500/10 px-3 py-0.5 rounded-full border border-lime-500/20 font-sans font-semibold">
-                {mode === 'signin' ? 'Individual Access' : mode === 'signup' ? 'Create Account' : 'Enterprise SSO'}
-              </span>
-              <span className="text-xs text-amber-400 font-mono">• {mode === 'org' ? 'Organization Portal' : 'Verification Enforced'}</span>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-xs uppercase tracking-wider text-lime-400 bg-lime-500/10 px-3 py-0.5 rounded-full border border-lime-500/20 font-sans font-semibold">
+                  {mode === 'signin' ? 'Individual Access' : mode === 'signup' ? 'Create Account' : 'Enterprise SSO'}
+                </span>
+                <span className="text-xs text-amber-400 font-mono">• {mode === 'org' ? 'Organization Portal' : 'Verification Enforced'}</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-pink-500/15 border border-purple-500/30 text-xs font-sans text-slate-300">
+                <Sparkles className="w-3 h-3 text-pink-400 animate-pulse" />
+                <span className="text-[11px]">Crafted by <strong className="text-white font-semibold">HiVizStudios</strong></span>
+              </div>
             </div>
             <h1 className="text-2xl font-display font-bold text-white tracking-tight pt-1">
               {mode === 'signin' ? 'Welcome Back' : mode === 'signup' ? 'Register Your Identity' : 'Organization Portal'}
@@ -449,7 +463,7 @@ export const Auth: React.FC = () => {
               {mode === 'signin'
                 ? 'Sign in with your verified email address and password.'
                 : mode === 'signup'
-                ? 'Register your account. A 6-digit email verification code will be required.'
+                ? 'Register your account. Direct instant access will be granted upon creation.'
                 : 'Authenticate using your corporate email domain and Organization SSO credentials.'}
             </p>
           </div>
@@ -799,6 +813,10 @@ export const Auth: React.FC = () => {
                 </>
               )}
             </p>
+            <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-center gap-1.5 text-xs text-slate-400 font-sans">
+              <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+              <span>Crafted by <strong className="text-white font-semibold">HiVizStudios</strong></span>
+            </div>
           </div>
         </motion.div>
       </div>
