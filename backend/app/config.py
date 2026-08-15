@@ -83,6 +83,11 @@ class Settings:
         return os.getenv("GOOGLE_CLIENT_ID", "").strip()
 
     @property
+    def GOOGLE_CLIENT_SECRET(self) -> str:
+        reload_env()
+        return os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
+
+    @property
     def GITHUB_CLIENT_ID(self) -> str:
         reload_env()
         return os.getenv("GITHUB_CLIENT_ID", "").strip()
@@ -91,5 +96,6 @@ class Settings:
     def GITHUB_CLIENT_SECRET(self) -> str:
         reload_env()
         return os.getenv("GITHUB_CLIENT_SECRET", "").strip()
+
 
 settings = Settings()
