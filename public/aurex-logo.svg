@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="aurexAscent" x1="12" y1="56" x2="32" y2="8" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="45%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#D4F938"/>
+    </linearGradient>
+    <linearGradient id="aurexDescent" x1="32" y1="8" x2="52" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D4F938"/>
+      <stop offset="40%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#042F2E"/>
+    </linearGradient>
+    <linearGradient id="aurexQuantumBeam" x1="18" y1="40" x2="46" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#D4F938"/>
+      <stop offset="100%" stop-color="#10B981" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="aurexInnerGlow" x1="32" y1="20" x2="32" y2="42" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#D4F938" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#00E5FF" stop-opacity="0.1"/>
+    </linearGradient>
+    <linearGradient id="specularGlint" x1="32" y1="8" x2="32" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <polygon points="32,4 58,18 58,46 32,60 6,46 6,18" fill="#080A0E" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1.2"/>
+  <path d="M32 10L12 50H23L32 30L41 50H52L32 10Z" fill="url(#aurexAscent)"/>
+  <path d="M32 10L52 50H41L32 30V10Z" fill="url(#aurexDescent)"/>
+  <polygon points="20,38 44,38 39,44 25,44" fill="url(#aurexQuantumBeam)"/>
+  <polygon points="32,22 38,36 26,36" fill="url(#aurexInnerGlow)"/>
+  <line x1="32" y1="10" x2="32" y2="30" stroke="url(#specularGlint)" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="32" cy="10" r="2" fill="#FFFFFF"/>
+  <circle cx="12" cy="50" r="1.8" fill="#00E5FF"/>
+  <circle cx="52" cy="50" r="1.8" fill="#10B981"/>
+  <circle cx="32" cy="41" r="1.5" fill="#D4F938"/>
+</svg>
