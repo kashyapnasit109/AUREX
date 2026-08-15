@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Landing } from './pages/Landing';
 import { Auth } from './pages/Auth';
 import { Security } from './pages/Security';
+import { Architecture } from './pages/Architecture';
 import { AppShell } from './components/layout/AppShell';
 import { Overview } from './pages/Overview';
 import { QuantStudio } from './pages/QuantStudio';
@@ -23,12 +24,14 @@ export default function App() {
       <Route path="/login" element={<Auth />} />
       <Route path="/landing" element={<Landing />} />
       <Route path="/security" element={<Security />} />
+      <Route path="/architecture" element={<Architecture />} />
 
       {/* Authenticated Platform Workspace */}
       <Route path="/app" element={<AppShell />}>
         <Route index element={<Navigate to="/app/overview" replace />} />
         <Route path="overview" element={<Overview />} />
         <Route path="pitch" element={<PitchDeck />} />
+        <Route path="architecture" element={<Architecture />} />
         <Route path="intelligence" element={<IntelligenceCore />} />
         <Route path="insights" element={<InsightEngine />} />
         <Route path="quant" element={<QuantStudio />} />

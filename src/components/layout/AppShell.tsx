@@ -13,7 +13,8 @@ import {
   Search,
   Server,
   Play,
-  Presentation
+  Presentation,
+  Layers
 } from 'lucide-react';
 import { TickerTape } from './TickerTape';
 import { AurexLogo } from '../brand/AurexLogo';
@@ -29,6 +30,8 @@ export const AppShell: React.FC = () => {
         return { domain: 'Executive', title: 'Tri-Domain Command Center' };
       case '/app/pitch':
         return { domain: 'Presentation Mode', title: 'Interactive Hackathon Pitch Deck' };
+      case '/app/architecture':
+        return { domain: 'Architecture', title: 'System Blueprint, Math Logics & ER Schema' };
       case '/app/intelligence':
         return { domain: 'Intelligence Core', title: 'Closed-Loop Telemetry & Convergence' };
       case '/app/insights':
@@ -68,6 +71,7 @@ export const AppShell: React.FC = () => {
           <nav className="flex flex-col gap-2.5">
             <AppNavItem to="/app/overview" icon={<Activity className="w-5 h-5" />} label="Overview" />
             <AppNavItem to="/app/pitch" icon={<Presentation className="w-5 h-5 text-amber-400" />} label="Pitch Deck" />
+            <AppNavItem to="/app/architecture" icon={<Layers className="w-5 h-5 text-emerald-400" />} label="System Architecture" />
             <AppNavItem to="/app/intelligence" icon={<Zap className="w-5 h-5 text-lime-400" />} label="Intelligence Core" />
             <AppNavItem to="/app/insights" icon={<Sparkles className="w-5 h-5 text-cyan-400" />} label="Insight Engine" />
             <AppNavItem to="/app/quant" icon={<Terminal className="w-5 h-5" />} label="Quant Studio" />

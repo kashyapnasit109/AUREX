@@ -9,6 +9,7 @@ export const Navbar: React.FC = () => {
 
   const navLinks = [
     { name: 'Overview', path: '/app/overview' },
+    { name: 'Architecture', path: '/app/architecture' },
     { name: 'Quant Studio', path: '/app/quant' },
     { name: 'DataMart', path: '/app/datamart' },
     { name: 'Aiden AI', path: '/app/aiden' },
