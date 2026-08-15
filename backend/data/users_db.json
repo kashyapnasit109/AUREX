@@ -61,5 +61,25 @@
     "verification_code": "646789",
     "totp_enabled": false,
     "registered_at": 1786778448
+  },
+  "test.prefix@aurex.intelligence": {
+    "name": "Test Prefix",
+    "email": "test.prefix@aurex.intelligence",
+    "password_hash": "a109e36947ad56de1dca1cc49f0ef8ac9ad9a7b1aa0df41fb3c4cb73c1ff01ea",
+    "role": "Institutional Operator",
+    "is_verified": false,
+    "verification_code": "263823",
+    "totp_enabled": false,
+    "registered_at": 1786780141
+  },
+  "test.root@aurex.intelligence": {
+    "name": "Test Root",
+    "email": "test.root@aurex.intelligence",
+    "password_hash": "a109e36947ad56de1dca1cc49f0ef8ac9ad9a7b1aa0df41fb3c4cb73c1ff01ea",
+    "role": "Institutional Operator",
+    "is_verified": false,
+    "verification_code": "550584",
+    "totp_enabled": false,
+    "registered_at": 1786780145
   }
 }

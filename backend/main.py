@@ -33,6 +33,14 @@ app.include_router(organization.router, prefix=settings.API_V1_STR)
 app.include_router(quant.router, prefix=settings.API_V1_STR)
 app.include_router(datamart.router, prefix=settings.API_V1_STR)
 app.include_router(aiden.router, prefix=settings.API_V1_STR)
+
+# Also mount at root level for seamless fallback (e.g. /auth/signup, /auth/login)
+app.include_router(health.router)
+app.include_router(auth.router)
+app.include_router(organization.router)
+app.include_router(quant.router)
+app.include_router(datamart.router)
+app.include_router(aiden.router)
 app.include_router(websocket.router) # Root level ws endpoint /ws/telemetry
 
 @app.get("/")
@@ -43,6 +51,7 @@ def root():
         "status": "online",
         "documentation": f"{settings.API_V1_STR}/docs"
     }
+
 
 if __name__ == "__main__":
     import uvicorn

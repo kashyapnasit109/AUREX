@@ -3,10 +3,17 @@
  * Connects React UI components to the FastAPI Backend Core at http://localhost:8000/api/v1
  */
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:8000/api/v1';
+const getNormalizedApiUrl = (): string => {
+  const raw = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.trim();
+  if (!raw) return 'http://localhost:8000/api/v1';
+  const clean = raw.replace(/\/+$/, '');
+  return clean.endsWith('/api/v1') ? clean : `${clean}/api/v1`;
+};
+
+const API_BASE_URL = getNormalizedApiUrl();
 
 const getDerivedWsUrl = () => {
-  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL as string;
+  if (import.meta.env.VITE_WS_URL) return (import.meta.env.VITE_WS_URL as string).trim();
   try {
     const url = new URL(API_BASE_URL);
     const wsProto = url.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -17,6 +24,7 @@ const getDerivedWsUrl = () => {
 };
 
 const WS_URL = getDerivedWsUrl();
+
 
 
 
