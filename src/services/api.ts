@@ -415,6 +415,77 @@ export class AurexAPI {
   }
 
   /**
+   * Upload Dataset (CSV, JSON, Parquet, Excel) to DuckDB
+   */
+  static async uploadDataset(file: File, customName?: string) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (customName) formData.append('custom_name', customName);
+
+      const res = await fetch(`${API_BASE_URL}/datamart/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Upload failed');
+      return data;
+    } catch (err: any) {
+      console.warn('[AUREX API] uploadDataset error:', err);
+      return { error: err.message || 'Dataset upload failed' };
+    }
+  }
+
+  /**
+   * List all DuckDB tables & record counts
+   */
+  static async listTables() {
+    try {
+      const res = await fetch(`${API_BASE_URL}/datamart/tables`);
+      if (!res.ok) throw new Error('Failed to list tables');
+      return await res.json();
+    } catch (err: any) {
+      console.warn('[AUREX API] listTables error:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Execute custom SQL against DuckDB
+   */
+  static async executeCustomSQL(sql: string) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/datamart/sql`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sql }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'SQL Execution error');
+      return data;
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Query failed' };
+    }
+  }
+
+  /**
+   * Test AI Connection to any provider (Groq, OpenAI, Anthropic, Gemini, LM Studio, Ollama)
+   */
+  static async testAIConnection(params: { provider: string; api_key?: string; url?: string; model?: string }) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/aiden/test-connection`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!res.ok) throw new Error('AI Test connection failed');
+      return await res.json();
+    } catch (err: any) {
+      return { connected: false, error: err.message || 'Connection test failed' };
+    }
+  }
+
+  /**
    * Connect to WebSocket Real-Time Telemetry Stream
    */
   static connectTelemetry(onMessage: (data: any) => void): () => void {

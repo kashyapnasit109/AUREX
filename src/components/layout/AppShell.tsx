@@ -2,22 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useLocation, Link, useNavigate } from 'react-router-dom';
 import {
   Activity,
-  Terminal,
   Database,
   MessageSquare,
-  Shield,
-  Radio,
-  Zap,
-  Sparkles,
   Search,
   Server,
-  Play,
-  Presentation,
   Layers,
   User,
   Settings as SettingsIcon,
   LogOut,
-  Sliders
+  Sliders,
+  Sparkles,
+  Play,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 
 import { TickerTape } from './TickerTape';
@@ -29,6 +26,26 @@ export const AppShell: React.FC = () => {
   const navigate = useNavigate();
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  // Sidebar expanded / collapsed state
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('AUREX_SIDEBAR_EXPANDED') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarExpanded((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('AUREX_SIDEBAR_EXPANDED', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
   const [currentUser, setCurrentUser] = useState<any>({
     name: 'Admin Operator',
     role: 'Executive Operator',
@@ -89,44 +106,134 @@ export const AppShell: React.FC = () => {
 
   return (
     <div className="flex h-screen w-full bg-obsidian-900 text-slate-100 overflow-hidden font-sans select-none">
-      {/* Persistent Left Nav Rail with all direct page buttons */}
-      <aside className="w-18 md:w-20 border-r border-white/10 flex flex-col items-center py-6 justify-between shrink-0 bg-obsidian-950/80 backdrop-blur-xl z-30 overflow-y-auto">
-        {/* Brand Icon & Main Navigation */}
-        <div className="flex flex-col items-center gap-5">
-          <Link
-            to="/app/overview"
-            className="flex items-center justify-center transition-all group"
-            title="AUREX Intelligence Center"
-          >
-            <AurexLogo size={36} />
-          </Link>
+      {/* Expandable / Collapsible Left Navigation Sidebar */}
+      <aside
+        className={`border-r border-white/10 flex flex-col justify-between shrink-0 bg-obsidian-950/90 backdrop-blur-xl z-30 overflow-y-auto transition-all duration-300 ease-in-out ${
+          isSidebarExpanded ? 'w-64 p-4' : 'w-18 md:w-20 py-6 items-center px-2'
+        }`}
+      >
+        {/* Top Header: Brand Logo + Collapse / Expand Toggle Button */}
+        <div className="flex flex-col gap-4">
+          <div className={`flex items-center ${isSidebarExpanded ? 'justify-between px-2' : 'justify-center'}`}>
+            <Link
+              to="/app/overview"
+              className="flex items-center gap-3 transition-all group"
+              title="AUREX Intelligence Center"
+            >
+              <AurexLogo size={34} />
+              {isSidebarExpanded && (
+                <div className="flex flex-col">
+                  <span className="font-display font-black text-white text-base tracking-wider leading-none">
+                    AUREX
+                  </span>
+                  <span className="text-[10px] text-lime-400 font-mono tracking-widest uppercase">
+                    INTELLIGENCE
+                  </span>
+                </div>
+              )}
+            </Link>
+
+            {isSidebarExpanded && (
+              <button
+                onClick={toggleSidebar}
+                title="Collapse Sidebar"
+                className="p-1.5 rounded-xl bg-obsidian-850 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white transition-all"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* If collapsed, show small toggle button under logo */}
+          {!isSidebarExpanded && (
+            <button
+              onClick={toggleSidebar}
+              title="Expand Sidebar"
+              className="p-2 rounded-xl bg-obsidian-850 hover:bg-white/10 border border-white/10 text-slate-400 hover:text-white transition-all mx-auto"
+            >
+              <PanelLeftOpen className="w-4 h-4" />
+            </button>
+          )}
 
           {/* Navigation Rail Items */}
-          <nav className="flex flex-col gap-2">
-            <AppNavItem to="/app/overview" icon={<Activity className="w-5 h-5" />} label="Overview" />
-            <AppNavItem to="/app/query-studio" icon={<Terminal className="w-5 h-5 text-cyan-400" />} label="Query Studio" />
-            <AppNavItem to="/app/pitch" icon={<Presentation className="w-5 h-5 text-amber-400" />} label="Pitch Deck" />
-            <AppNavItem to="/app/architecture" icon={<Layers className="w-5 h-5 text-emerald-400" />} label="System Architecture" />
-            <AppNavItem to="/app/intelligence" icon={<Zap className="w-5 h-5 text-lime-400" />} label="Intelligence Core" />
-            <AppNavItem to="/app/insights" icon={<Sparkles className="w-5 h-5 text-cyan-400" />} label="Insight Engine" />
-            <AppNavItem to="/app/quant" icon={<Sliders className="w-5 h-5 text-purple-400" />} label="Quant Studio" />
-            <AppNavItem to="/app/datamart" icon={<Database className="w-5 h-5 text-emerald-400" />} label="DataMart" />
-            <AppNavItem to="/app/aiden" icon={<MessageSquare className="w-5 h-5 text-lime-400" />} label="Aiden AI" />
-            <AppNavItem to="/app/data" icon={<Server className="w-5 h-5 text-indigo-400" />} label="Data Hub" />
-            <AppNavItem to="/app/workflows" icon={<Play className="w-5 h-5 text-rose-400" />} label="Workflows" />
-            
-            <div className="w-6 h-px bg-white/10 my-1 mx-auto" />
-            
-            <AppNavItem to="/app/profile" icon={<User className="w-5 h-5 text-cyan-300" />} label="User Profile" />
-            <AppNavItem to="/app/settings" icon={<SettingsIcon className="w-5 h-5 text-lime-300" />} label="Settings & 2FA" />
-            <AppNavItem to="/security" icon={<Shield className="w-5 h-5 text-slate-400" />} label="Zero-Bias Trust" />
+          <nav className="flex flex-col gap-1.5 pt-2">
+            <AppNavItem
+              to="/app/overview"
+              icon={<Activity className="w-5 h-5 text-white shrink-0" />}
+              label="Command Center"
+              isExpanded={isSidebarExpanded}
+            />
+            <AppNavItem
+              to="/app/aiden"
+              icon={<MessageSquare className="w-5 h-5 text-lime-400 shrink-0" />}
+              label="Aiden AI Assistant"
+              isExpanded={isSidebarExpanded}
+            />
+            <AppNavItem
+              to="/app/insights"
+              icon={<Sparkles className="w-5 h-5 text-cyan-400 shrink-0" />}
+              label="Autonomous Signals"
+              isExpanded={isSidebarExpanded}
+            />
+            <AppNavItem
+              to="/app/workflows"
+              icon={<Play className="w-5 h-5 text-rose-400 shrink-0" />}
+              label="Workflow Engine"
+              isExpanded={isSidebarExpanded}
+            />
+            <AppNavItem
+              to="/app/datamart"
+              icon={<Database className="w-5 h-5 text-cyan-400 shrink-0" />}
+              label="DataMart & SQL Studio"
+              isExpanded={isSidebarExpanded}
+            />
+            <AppNavItem
+              to="/app/quant"
+              icon={<Sliders className="w-5 h-5 text-purple-400 shrink-0" />}
+              label="Quant Studio"
+              isExpanded={isSidebarExpanded}
+            />
+            <AppNavItem
+              to="/app/data"
+              icon={<Server className="w-5 h-5 text-emerald-400 shrink-0" />}
+              label="Data Hub & Ingestion"
+              isExpanded={isSidebarExpanded}
+            />
+            <AppNavItem
+              to="/app/architecture"
+              icon={<Layers className="w-5 h-5 text-amber-400 shrink-0" />}
+              label="System Blueprint & Docs"
+              isExpanded={isSidebarExpanded}
+            />
+
+            <div className={`h-px bg-white/10 my-2 ${isSidebarExpanded ? 'mx-2' : 'w-6 mx-auto'}`} />
+
+            <AppNavItem
+              to="/app/settings"
+              icon={<SettingsIcon className="w-5 h-5 text-slate-400 hover:text-white shrink-0" />}
+              label="Platform Settings & 2FA"
+              isExpanded={isSidebarExpanded}
+            />
           </nav>
         </div>
 
         {/* Bottom System Telemetry Indicator */}
-        <div className="flex flex-col items-center gap-3 font-mono pt-4">
-          <div className="p-2 rounded-xl bg-obsidian-850 border border-white/10 text-lime-400" title="Core Online">
-            <Radio className="w-4 h-4 animate-pulse" />
+        <div className={`pt-4 font-mono ${isSidebarExpanded ? 'px-2' : 'flex flex-col items-center'}`}>
+          <div className={`p-2.5 rounded-2xl bg-obsidian-850 border border-white/10 flex items-center gap-2.5 text-xs ${
+            isSidebarExpanded ? 'justify-between' : 'justify-center'
+          }`}>
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-lime-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-lime-500"></span>
+              </span>
+              {isSidebarExpanded && <span className="text-white font-bold text-[11px]">Core Online</span>}
+            </div>
+            {isSidebarExpanded && (
+              <span className="text-[10px] text-lime-400 font-mono font-semibold">
+                DuckDB 1.1 Active
+              </span>
+            )}
           </div>
         </div>
       </aside>
@@ -229,17 +336,20 @@ export const AppShell: React.FC = () => {
   );
 };
 
-// Nav Item Helper with Tooltip
-const AppNavItem: React.FC<{ to: string; icon: React.ReactNode; label: string }> = ({
-  to,
-  icon,
-  label,
-}) => (
+// Nav Item Helper with Expand/Collapse Text Support
+const AppNavItem: React.FC<{
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  isExpanded: boolean;
+}> = ({ to, icon, label, isExpanded }) => (
   <NavLink
     to={to}
     title={label}
     className={({ isActive }) =>
-      `p-3 rounded-2xl transition-all relative group flex items-center justify-center ${
+      `rounded-2xl transition-all relative group flex items-center ${
+        isExpanded ? 'px-3.5 py-2.5 gap-3' : 'p-3 justify-center'
+      } ${
         isActive
           ? 'bg-lime-500/10 text-lime-400 border border-lime-500/30 shadow-[0_0_20px_rgba(212,249,56,0.15)] font-semibold'
           : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'
@@ -249,13 +359,23 @@ const AppNavItem: React.FC<{ to: string; icon: React.ReactNode; label: string }>
     {({ isActive }) => (
       <>
         {icon}
+
+        {isExpanded && (
+          <span className="text-xs font-semibold whitespace-nowrap truncate text-slate-200 group-hover:text-white">
+            {label}
+          </span>
+        )}
+
         {isActive && (
           <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-lime-400 rounded-r-full shadow-[0_0_8px_rgba(212,249,56,0.8)]" />
         )}
-        {/* Tooltip on hover */}
-        <span className="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-obsidian-850 border border-white/10 text-white text-[11px] font-sans whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-xl z-50">
-          {label}
-        </span>
+
+        {/* Tooltip on hover when collapsed */}
+        {!isExpanded && (
+          <span className="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-obsidian-850 border border-white/10 text-white text-[11px] font-sans whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity shadow-xl z-50">
+            {label}
+          </span>
+        )}
       </>
     )}
   </NavLink>

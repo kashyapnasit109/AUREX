@@ -2,23 +2,20 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Landing } from './pages/Landing';
 import { Auth } from './pages/Auth';
-import { Security } from './pages/Security';
 import { Architecture } from './pages/Architecture';
 import { AppShell } from './components/layout/AppShell';
 import { Overview } from './pages/Overview';
 import { QuantStudio } from './pages/QuantStudio';
 import { DataMart } from './pages/DataMart';
 import { Aiden } from './pages/Aiden';
-import { IntelligenceCore } from './pages/IntelligenceCore';
-import { InsightEngine } from './pages/InsightEngine';
 import { Customer360 } from './pages/Customer360';
 import { ProductIntelligence } from './pages/ProductIntelligence';
 import { DataHub } from './pages/DataHub';
-import { WorkflowEngine } from './pages/WorkflowEngine';
-import { PitchDeck } from './pages/PitchDeck';
 import { Profile } from './pages/Profile';
 import { Settings } from './pages/Settings';
 import { QueryStudio } from './pages/QueryStudio';
+import { InsightEngine } from './pages/InsightEngine';
+import { WorkflowEngine } from './pages/WorkflowEngine';
 
 function isAuthenticated(): boolean {
   try {
@@ -48,7 +45,7 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Routes>
-      {/* Root Home Route: Navigates to App Overview if logged in, or Landing if logged out */}
+      {/* Root Home Route */}
       <Route
         path="/"
         element={
@@ -60,7 +57,7 @@ export default function App() {
         }
       />
 
-      {/* Login & Auth Gateway (Only accessible when logged out) */}
+      {/* Login & Auth Gateway */}
       <Route
         path="/login"
         element={
@@ -70,8 +67,8 @@ export default function App() {
         }
       />
       <Route path="/landing" element={<Landing />} />
-      <Route path="/security" element={<Security />} />
-      <Route path="/architecture" element={<Architecture />} />
+      <Route path="/security" element={<Navigate to="/app/architecture?tab=security" replace />} />
+      <Route path="/architecture" element={<Navigate to="/app/architecture?tab=blueprint" replace />} />
 
       {/* Authenticated Platform Workspace */}
       <Route
@@ -84,17 +81,21 @@ export default function App() {
       >
         <Route index element={<Navigate to="/app/overview" replace />} />
         <Route path="overview" element={<Overview />} />
-        <Route path="pitch" element={<PitchDeck />} />
-        <Route path="architecture" element={<Architecture />} />
-        <Route path="intelligence" element={<IntelligenceCore />} />
-        <Route path="insights" element={<InsightEngine />} />
-        <Route path="quant" element={<QuantStudio />} />
+        <Route path="aiden" element={<Aiden />} />
         <Route path="datamart" element={<DataMart />} />
         <Route path="query-studio" element={<QueryStudio />} />
         <Route path="datamart/query-studio" element={<QueryStudio />} />
-        <Route path="aiden" element={<Aiden />} />
+        <Route path="quant" element={<QuantStudio />} />
         <Route path="data" element={<DataHub />} />
+        <Route path="insights" element={<InsightEngine />} />
         <Route path="workflows" element={<WorkflowEngine />} />
+        <Route path="architecture" element={<Architecture />} />
+
+        {/* Tabbed Navigation Redirects */}
+        <Route path="pitch" element={<Navigate to="/app/architecture?tab=pitch" replace />} />
+        <Route path="intelligence" element={<Navigate to="/app/architecture?tab=telemetry" replace />} />
+
+        {/* User Identity & Platform Configuration */}
         <Route path="profile" element={<Profile />} />
         <Route path="settings" element={<Settings />} />
         <Route path="customers/:id" element={<Customer360 />} />

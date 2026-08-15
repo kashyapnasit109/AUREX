@@ -15,7 +15,8 @@ import {
   Cpu,
   Sparkles,
   Save,
-  RotateCcw
+  RotateCcw,
+  Zap
 } from 'lucide-react';
 import { AurexAPI } from '../services/api';
 
@@ -675,17 +676,42 @@ export const Settings: React.FC = () => {
                 />
               </div>
             </div>
-            <button
-              onClick={() => {
-                const config = { provider: 'custom', model_name: customModelName, custom_url: customModelUrl, custom_api_key: customModelApiKey };
-                localStorage.setItem('AUREX_AI_MODEL_CONFIG', JSON.stringify(config));
-                setSuccessMessage('Custom model configuration saved! Switch to Custom model in Aiden chat.');
-              }}
-              className="px-4 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center gap-2 transition-all"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>Save Custom Model Config</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={async () => {
+                  setErrorMessage(null);
+                  setIsLoading(true);
+                  const res = await AurexAPI.testAIConnection({
+                    provider: 'custom',
+                    api_key: customModelApiKey,
+                    url: customModelUrl,
+                    model: customModelName
+                  });
+                  setIsLoading(false);
+                  if (res.connected) {
+                    setSuccessMessage(res.message || 'Custom AI endpoint connected successfully!');
+                  } else {
+                    setErrorMessage(res.error || 'Custom AI test connection failed.');
+                  }
+                }}
+                disabled={isLoading}
+                className="px-4 py-2.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 font-bold text-xs flex items-center gap-2 transition-all disabled:opacity-50"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>{isLoading ? 'Testing...' : 'Test Connection'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  const config = { provider: 'custom', model_name: customModelName, custom_url: customModelUrl, custom_api_key: customModelApiKey };
+                  localStorage.setItem('AUREX_AI_MODEL_CONFIG', JSON.stringify(config));
+                  setSuccessMessage('Custom model configuration saved! Switch to Custom model in Aiden chat.');
+                }}
+                className="px-4 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center gap-2 transition-all"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Save Custom Model Config</span>
+              </button>
+            </div>
           </div>
 
           {/* System Info */}

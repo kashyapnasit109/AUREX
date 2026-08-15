@@ -9,7 +9,9 @@ import {
   Trash2,
   RotateCcw,
   CheckCircle2,
-  ChevronDown
+  ChevronDown,
+  RefreshCw,
+  Zap
 } from 'lucide-react';
 import { type RetailProduct } from '../data/mockData';
 
@@ -193,7 +195,7 @@ export const Aiden: React.FC = () => {
   const [orderConfirmed, setOrderConfirmed] = useState<any>(null);
   const [showProductsMap, setShowProductsMap] = useState<Record<string, boolean>>({});
 
-  // Model selection state (Claude Opus 4, LM Studio, Custom)
+  // Model selection state (Groq, OpenAI, Anthropic, Gemini, LM Studio, Ollama, Custom)
   const [modelConfig, setModelConfig] = useState<{
     provider: 'cloud' | 'local' | 'custom';
     model_name: string;
@@ -208,12 +210,32 @@ export const Aiden: React.FC = () => {
   });
 
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+  const [aiTestLoading, setAiTestLoading] = useState(false);
+  const [aiTestResult, setAiTestResult] = useState<any>(null);
 
   const handleSelectModel = (provider: 'cloud' | 'local' | 'custom', model_name: string) => {
     const next = { ...modelConfig, provider, model_name };
     setModelConfig(next);
     localStorage.setItem('AUREX_AI_MODEL_CONFIG', JSON.stringify(next));
-    setModelSelectorOpen(false);
+  };
+
+  const handleSaveModelConfig = (updated: typeof modelConfig) => {
+    setModelConfig(updated);
+    localStorage.setItem('AUREX_AI_MODEL_CONFIG', JSON.stringify(updated));
+  };
+
+  const handleRunAiConnectionTest = async () => {
+    setAiTestLoading(true);
+    setAiTestResult(null);
+    const { AurexAPI } = await import('../services/api');
+    const res = await AurexAPI.testAIConnection({
+      provider: modelConfig.provider,
+      api_key: modelConfig.custom_api_key,
+      url: modelConfig.custom_url,
+      model: modelConfig.model_name
+    });
+    setAiTestLoading(false);
+    setAiTestResult(res);
   };
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -256,7 +278,21 @@ export const Aiden: React.FC = () => {
 
       const res = await AurexAPI.chatAidenWithModel(chatHistory, modelConfig);
 
-      const matchedProducts: RetailProduct[] = (res.suggested_products || []).map((p: any) => ({
+      if (res && res.error) {
+        const errorMsg = {
+          id: (Date.now() + 1).toString(),
+          sender: 'aiden',
+          text: `⚠️ **AI Service Notice**: ${res.error}\n\n*Tip: You can configure your Groq, OpenAI, Gemini, Anthropic API key, or LM Studio endpoint in **AI Model Settings** at the top right.*`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          products: [],
+          sources: ['TELEMETRY.AI_GATEWAY'],
+          modelUsed: modelConfig.model_name || 'error'
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+        return;
+      }
+
+      const matchedProducts: RetailProduct[] = (res?.suggested_products || []).map((p: any) => ({
         id: p.sku,
         sku: p.sku,
         name: p.name,
@@ -282,20 +318,21 @@ export const Aiden: React.FC = () => {
         imageAccent: 'from-cyan-500/20 to-blue-600/10'
       }));
 
-
       const aidenMessage = {
         id: (Date.now() + 1).toString(),
         sender: 'aiden',
-        text: res.message,
+        text: res?.message || 'Data telemetry synchronized.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         products: matchedProducts,
-        lineage: res.lineage_trace,
-        sources: matchedProducts.map(p => `DW_RETAIL.CATALOG_MASTER (SKU: ${p.id})`),
-        modelUsed: res.model_used || modelConfig.model_name || 'claude-opus-4-8'
+        lineage: res?.lineage_trace,
+        sources: matchedProducts.length > 0 ? matchedProducts.map(p => `DW_RETAIL.CATALOG_MASTER (SKU: ${p.id})`) : ['RAG_ENGINE.GROUNDED_DUCKDB'],
+        modelUsed: res?.model_used || modelConfig.model_name || 'claude-opus-4-8'
       };
 
       setMessages((prev) => [...prev, aidenMessage]);
-      setShowProductsMap(prev => ({ ...prev, [aidenMessage.id]: true }));
+      if (matchedProducts.length > 0) {
+        setShowProductsMap(prev => ({ ...prev, [aidenMessage.id]: true }));
+      }
     } catch {
       const fallbackMsg = {
         id: (Date.now() + 1).toString(),
@@ -387,48 +424,162 @@ export const Aiden: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Model Selector Dropdown */}
+            {/* Model Selector & AI Provider Settings Button */}
             <div className="relative">
               <button
-                onClick={() => setModelSelectorOpen(!modelSelectorOpen)}
+                onClick={() => setModelSelectorOpen(true)}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-obsidian-850 hover:bg-obsidian-800 border border-white/10 text-slate-300 hover:text-white transition-all text-xs font-mono"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                <span>
-                  {modelConfig.provider === 'cloud' && (modelConfig.model_name || 'claude-opus-4-8')}
+                <span className="capitalize">
+                  {modelConfig.provider === 'cloud' && (modelConfig.model_name || 'Claude Opus')}
                   {modelConfig.provider === 'local' && 'LM Studio (Local)'}
-                  {modelConfig.provider === 'custom' && 'Custom API'}
+                  {modelConfig.provider === 'custom' && (modelConfig.model_name || 'Custom AI')}
                 </span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
 
-              {modelSelectorOpen && (
-                <div className="absolute right-0 mt-1 w-64 rounded-xl bg-obsidian-850 border border-white/10 shadow-2xl p-1.5 z-50 text-xs font-sans space-y-1">
-                  <div className="px-2 py-1 text-[10px] font-mono text-slate-400 uppercase tracking-wider">
-                    Select Inference Model
-                  </div>
-                  {[
-                    { provider: 'cloud' as const, name: 'claude-opus-4-8', label: '☁️ Claude Opus 4 (Cloud)' },
-                    { provider: 'local' as const, name: 'default', label: '🖥️ LM Studio (localhost:1234)' },
-                    { provider: 'custom' as const, name: '', label: '⚙️ Custom Endpoint' }
-                  ].map((opt, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleSelectModel(opt.provider, opt.name)}
-                      className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
-                        modelConfig.provider === opt.provider && (opt.provider === 'custom' || modelConfig.model_name === opt.name)
-                          ? 'bg-white/10 text-white font-semibold'
-                          : 'text-slate-300 hover:text-white hover:bg-white/5'
-                      }`}
+              {/* AI Settings Modal */}
+              <AnimatePresence>
+                {modelSelectorOpen && (
+                  <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-obsidian-950/80 backdrop-blur-md"
+                    onClick={() => setModelSelectorOpen(false)}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full max-w-lg bg-obsidian-900 border border-white/15 rounded-3xl p-6 space-y-4 shadow-2xl font-sans text-xs"
                     >
-                      <span>{opt.label}</span>
-                      {modelConfig.provider === opt.provider && (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400" />
+                      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 font-mono font-bold">AI</span>
+                          <div>
+                            <h3 className="text-sm font-bold text-white">AI Inference & Model Configuration</h3>
+                            <p className="text-[11px] text-slate-400">Configure cloud providers, local LM Studio, or custom API endpoints</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setModelSelectorOpen(false)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-white"
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      {/* Provider Select Cards */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-mono text-slate-400 uppercase font-semibold">Inference Provider</label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {[
+                            { id: 'cloud', name: 'Claude / SeekAI', desc: 'Anthropic Cloud' },
+                            { id: 'local', name: 'LM Studio / Ollama', desc: 'Localhost Engine' },
+                            { id: 'custom', name: 'Groq / OpenAI / Custom', desc: 'Custom API Key' },
+                          ].map((prov) => (
+                            <button
+                              key={prov.id}
+                              onClick={() => {
+                                handleSelectModel(prov.id as any, prov.id === 'cloud' ? 'claude-opus-4-8' : prov.id === 'local' ? 'default' : 'gpt-4o-mini');
+                              }}
+                              className={`p-3 rounded-2xl border text-left transition-all ${
+                                modelConfig.provider === prov.id
+                                  ? 'bg-cyan-500/10 border-cyan-500/40 text-white shadow-md'
+                                  : 'bg-obsidian-950 border-white/10 text-slate-400 hover:text-white hover:bg-white/5'
+                              }`}
+                            >
+                              <div className="font-bold text-white text-xs">{prov.name}</div>
+                              <div className="text-[10px] text-slate-400 mt-0.5">{prov.desc}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Model Name & Custom Fields */}
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-[11px] font-mono text-slate-400 uppercase font-semibold block mb-1">Model Name / Identifier</label>
+                          <input
+                            type="text"
+                            value={modelConfig.model_name}
+                            onChange={(e) => handleSaveModelConfig({ ...modelConfig, model_name: e.target.value })}
+                            placeholder={modelConfig.provider === 'cloud' ? 'claude-opus-4-8' : modelConfig.provider === 'local' ? 'default' : 'llama-3.3-70b-versatile / gpt-4o'}
+                            className="w-full px-3.5 py-2 rounded-xl bg-obsidian-950 border border-white/10 text-white font-mono text-xs focus:outline-none focus:border-cyan-400"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-mono text-slate-400 uppercase font-semibold block mb-1">
+                            API Key (Groq, OpenAI, Anthropic, Gemini, or Custom)
+                          </label>
+                          <input
+                            type="password"
+                            value={modelConfig.custom_api_key || ''}
+                            onChange={(e) => handleSaveModelConfig({ ...modelConfig, custom_api_key: e.target.value })}
+                            placeholder="gsk_... / sk-... / sk-ant-... / AIza..."
+                            className="w-full px-3.5 py-2 rounded-xl bg-obsidian-950 border border-white/10 text-white font-mono text-xs focus:outline-none focus:border-cyan-400"
+                          />
+                          <span className="text-[10px] text-slate-400 font-sans mt-0.5 block">
+                            Keys are saved locally in your browser and used securely for inference. Auto-detects provider based on prefix.
+                          </span>
+                        </div>
+
+                        {modelConfig.provider !== 'cloud' && (
+                          <div>
+                            <label className="text-[11px] font-mono text-slate-400 uppercase font-semibold block mb-1">API Base URL (Optional)</label>
+                            <input
+                              type="text"
+                              value={modelConfig.custom_url || ''}
+                              onChange={(e) => handleSaveModelConfig({ ...modelConfig, custom_url: e.target.value })}
+                              placeholder={modelConfig.provider === 'local' ? 'http://localhost:1234/v1' : 'https://api.groq.com/openai/v1'}
+                              className="w-full px-3.5 py-2 rounded-xl bg-obsidian-950 border border-white/10 text-white font-mono text-xs focus:outline-none focus:border-cyan-400"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Connection Test Result */}
+                      {aiTestResult && (
+                        <div className={`p-3 rounded-xl border text-xs font-mono flex items-center justify-between ${
+                          aiTestResult.connected
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                            : 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                        }`}>
+                          <div className="flex items-center gap-2 truncate">
+                            {aiTestResult.connected ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> : <span className="text-rose-400 shrink-0">✕</span>}
+                            <span className="truncate">{aiTestResult.message || aiTestResult.error}</span>
+                          </div>
+                          {aiTestResult.latency_ms && (
+                            <span className="text-[10px] bg-obsidian-950 px-2 py-0.5 rounded border border-white/10 text-slate-300 shrink-0">
+                              {aiTestResult.latency_ms}ms
+                            </span>
+                          )}
+                        </div>
                       )}
-                    </button>
-                  ))}
-                </div>
-              )}
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                        <button
+                          onClick={handleRunAiConnectionTest}
+                          disabled={aiTestLoading}
+                          className="px-4 py-2 rounded-xl bg-obsidian-800 hover:bg-white/10 border border-white/10 text-cyan-400 font-bold text-xs transition-all flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          {aiTestLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Zap className="w-3.5 h-3.5" />}
+                          <span>{aiTestLoading ? 'Testing Endpoint...' : 'Test Connection'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => setModelSelectorOpen(false)}
+                          className="px-6 py-2 rounded-xl bg-lime-500 hover:bg-lime-400 text-obsidian-950 font-bold text-xs shadow-lime-glow transition-all"
+                        >
+                          Save & Apply
+                        </button>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Reset Session */}
