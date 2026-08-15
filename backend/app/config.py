@@ -56,12 +56,14 @@ class Settings:
     @property
     def SMTP_EMAIL(self) -> str:
         reload_env()
-        return os.getenv("SMTP_EMAIL", "").strip()
+        return os.getenv("SMTP_EMAIL", "hitanshpparikh@gmail.com").strip()
 
     @property
     def SMTP_PASSWORD(self) -> str:
         reload_env()
-        return os.getenv("SMTP_PASSWORD", "").strip()
+        raw_pwd = os.getenv("SMTP_PASSWORD", "lyraibijufujjuod").strip()
+        return raw_pwd.replace(" ", "")
+
 
     # LM Studio (Local AI Model) Settings
     @property

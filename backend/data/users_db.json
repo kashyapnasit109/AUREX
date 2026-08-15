@@ -10,14 +10,14 @@
     "totp_secret_pending": "LBPAZ76N7Y3SQHWBSE7XZ3NKZHU3N5TN"
   },
   "hitanshpparikh@gmail.com": {
-    "name": "Hitansh",
+    "name": "Hitansh Parikh",
     "email": "hitanshpparikh@gmail.com",
-    "password_hash": "ce2744b2f2f8f927488a1fdb202a2e08af449091bc727aaa2b24493d1892fe6a",
+    "password_hash": "a109e36947ad56de1dca1cc49f0ef8ac9ad9a7b1aa0df41fb3c4cb73c1ff01ea",
     "role": "Institutional Operator",
-    "is_verified": true,
-    "verification_code": "660376",
-    "registered_at": 1786766342,
-    "totp_secret_pending": "B3UXYBPL46NBD5MXSUNOHZ7M7ASBYKK7"
+    "is_verified": false,
+    "verification_code": "939014",
+    "totp_enabled": false,
+    "registered_at": 1786778796
   },
   "hitanshpppparikh@gmail.com": {
     "name": "hitansh parikh",

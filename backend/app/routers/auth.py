@@ -83,12 +83,6 @@ def signup(payload: SignUpRequest):
     name_clean = payload.name.strip()
     users = load_users()
 
-    if email_clean in users and users[email_clean].get("is_verified", False):
-        raise HTTPException(
-            status_code=400,
-            detail="An account with this email already exists and is verified. Please sign in."
-        )
-
     # Generate 6-digit verification code
     code = f"{random.randint(100000, 999999)}"
     pwd_hash = hashlib.sha256(payload.password.encode()).hexdigest()
@@ -99,7 +93,7 @@ def signup(payload: SignUpRequest):
         "email": email_clean,
         "password_hash": pwd_hash,
         "role": "Institutional Operator",
-        "is_verified": False, # Requires Email Verification!
+        "is_verified": False,  # Requires Email Verification!
         "verification_code": code,
         "totp_enabled": False,
         "registered_at": timestamp
@@ -115,9 +109,10 @@ def signup(payload: SignUpRequest):
         "status": "SUCCESS",
         "require_verification": True,
         "email": email_clean,
-        "code": code, # Included for convenience during testing
-        "message": f"Verification code {'sent via email' if sent else 'generated'}. Please verify your email to log in."
+        "code": code,
+        "message": f"Verification code sent to {email_clean}. Please check your email inbox."
     }
+
 
 # ─── Verify Email ──────────────────────────────────────────────────
 @router.post("/verify-email")
