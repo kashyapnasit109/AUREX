@@ -4,7 +4,20 @@
  */
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) || 'http://localhost:8000/api/v1';
-const WS_URL = (import.meta.env.VITE_WS_URL as string | undefined) || 'ws://localhost:8000/ws/telemetry';
+
+const getDerivedWsUrl = () => {
+  if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL as string;
+  try {
+    const url = new URL(API_BASE_URL);
+    const wsProto = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${wsProto}//${url.host}/ws/telemetry`;
+  } catch {
+    return 'ws://localhost:8000/ws/telemetry';
+  }
+};
+
+const WS_URL = getDerivedWsUrl();
+
 
 
 export interface BacktestParams {
